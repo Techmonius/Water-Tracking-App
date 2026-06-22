@@ -1,46 +1,412 @@
-const APP_VERSION='2026-06-22.9';
-const KEY='waterTracker_v1';
-const quick=[8,12,16,20,30];
-const defaults={goal:120,weekdayGoal:120,weekendGoal:100,goalMode:'daily',theme:'system',cups:[{id:'owala',name:'Owala',oz:24},{id:'mug',name:'Mug',oz:12},{id:'stanley',name:'Stanley',oz:40}],days:{},backups:{}};
-let state=load(),editingCupId=null,timelineOpen=false,editingCups=false;
-function uid(){return crypto.randomUUID?crypto.randomUUID():String(Date.now()+Math.random())}
-function load(){try{const s=JSON.parse(localStorage.getItem(KEY));let x=s?{...defaults,...s,cups:s.cups?.length?s.cups:defaults.cups,days:s.days||{},backups:s.backups||{}}:structuredClone(defaults);x.cups=x.cups.map(c=>({...c,id:c.id||uid()}));return x}catch{return structuredClone(defaults)}}
-function save(){localStorage.setItem(KEY,JSON.stringify(state))}
-function dayKey(d=new Date()){const local=new Date(d.getTime()-d.getTimezoneOffset()*60000);return local.toISOString().slice(0,10)}
-function dateFromKey(k){const [y,m,d]=k.split('-').map(Number);return new Date(y,m-1,d)}
-function goalFor(k=dayKey()){if(state.goalMode==='weekdayWeekend'){const d=dateFromKey(k).getDay();return d===0||d===6?Number(state.weekendGoal||state.goal):Number(state.weekdayGoal||state.goal)}return Number(state.goal||120)}
-function today(){const k=dayKey();if(!state.days[k])state.days[k]={drinks:[]};return state.days[k]}
-function drinks(k=dayKey()){return state.days[k]?.drinks||[]}
-function total(k=dayKey()){return drinks(k).reduce((s,d)=>s+Number(d.oz||0),0)}
-function localBackup(){const k=dayKey();state.backups=state.backups||{};state.backups[k]=JSON.parse(JSON.stringify(today()));const keys=Object.keys(state.backups).sort();while(keys.length>30){delete state.backups[keys.shift()]}save()}
-function restoreToday(e){e&&e.preventDefault();const k=dayKey();const backup=state.backups&&state.backups[k];if(!backup){toast('No backup for today');return}if(!confirm('Restore today from the local backup? This replaces today’s current log.'))return;state.days[k]=JSON.parse(JSON.stringify(backup));save();render();toast('Today restored')}
-function add(oz,label='Quick add'){oz=Number(oz);if(!oz||oz<1)return;const before=total(),g=goalFor();today().drinks.push({id:uid(),oz,label,at:new Date().toISOString()});localBackup();render();slosh();navigator.vibrate?.(20);const after=total();if(before<g&&after>=g){toast(`Goal hit: ${after} oz`);celebrate()}else toast(`Added ${oz} oz`)}
-function undo(){const d=today().drinks.pop();if(!d)return;localBackup();render();toast(`Undid ${d.oz} oz`)}
-function openAmount(){document.getElementById('amountInput').value='';document.getElementById('amountDialog').showModal();setTimeout(()=>document.getElementById('amountInput').focus(),60)}
-function saveAmount(e){const oz=Number(document.getElementById('amountInput').value);if(!oz||oz<1){e.preventDefault();alert('Enter a valid ounce amount.');return}add(oz,'Custom amount')}
-function openCup(id=null){editingCupId=id;const c=state.cups.find(x=>x.id===id);document.getElementById('cupTitle').textContent=c?'Edit Cup':'Add Cup';document.getElementById('cupName').value=c?.name||'';document.getElementById('cupOz').value=c?.oz||'';document.getElementById('deleteCup').style.display=c?'block':'none';document.getElementById('cupDialog').showModal();setTimeout(()=>document.getElementById('cupName').focus(),60)}
-function saveCup(e){const name=document.getElementById('cupName').value.trim(),oz=Number(document.getElementById('cupOz').value);if(!name||!oz||oz<1){e.preventDefault();alert('Enter a cup name and valid ounce amount.');return}if(editingCupId){const c=state.cups.find(x=>x.id===editingCupId);if(c){c.name=name;c.oz=oz;toast('Cup updated')}}else{state.cups.push({id:uid(),name,oz});toast('Cup added')}save();setTimeout(render,0)}
-function deleteCup(e){e.preventDefault();if(!editingCupId)return;const c=state.cups.find(x=>x.id===editingCupId);if(c&&confirm(`Delete ${c.name}?`)){state.cups=state.cups.filter(x=>x.id!==editingCupId);save();document.getElementById('cupDialog').close();render();toast('Cup deleted')}}
-function openSettings(){document.getElementById('goalInput').value=state.goal;document.getElementById('weekdayGoalInput').value=state.weekdayGoal||state.goal;document.getElementById('weekendGoalInput').value=state.weekendGoal||state.goal;document.getElementById('goalModeInput').value=state.goalMode||'daily';document.getElementById('themeInput').value=state.theme||'system';const v=document.getElementById('versionText');if(v)v.textContent=`Version ${APP_VERSION} · local-only`;document.getElementById('settingsDialog').showModal()}
-function saveSettings(e){const goal=Number(document.getElementById('goalInput').value),wg=Number(document.getElementById('weekdayGoalInput').value),eg=Number(document.getElementById('weekendGoalInput').value);if(!goal||goal<1||!wg||wg<1||!eg||eg<1){e.preventDefault();alert('Enter valid goals.');return}state.goal=goal;state.weekdayGoal=wg;state.weekendGoal=eg;state.goalMode=document.getElementById('goalModeInput').value;state.theme=document.getElementById('themeInput').value;save();applyTheme();setTimeout(render,0);toast('Settings saved')}
-function editCups(e){e.preventDefault();editingCups=!editingCups;document.getElementById('settingsDialog').close();toast(editingCups?'Cup edit mode on':'Cup edit mode off');render()}
-function applyTheme(){const pref=matchMedia('(prefers-color-scheme:dark)').matches;document.documentElement.dataset.theme=(state.theme||'system')==='system'?(pref?'dark':'light'):state.theme}
-function streaks(){let cur=0,best=0,run=0;for(let i=365;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);const k=dayKey(d),met=total(k)>=goalFor(k);run=met?run+1:0;best=Math.max(best,run)}for(let i=0;i<365;i++){const d=new Date();d.setDate(d.getDate()-i);const k=dayKey(d);if(total(k)>=goalFor(k))cur++;else break}return{cur,best}}
-function render(){today();const k=dayKey(),g=goalFor(k),t=total(),pctRaw=t/g*100,pct=Math.min(100,Math.round(pctRaw));document.getElementById('total').textContent=t;document.getElementById('goal').textContent=g;document.getElementById('status').textContent=`${Math.round(pctRaw)}% complete`;document.getElementById('water').style.height=pct+'%';const st=streaks();document.getElementById('streak').textContent=st.cur;document.getElementById('bestStreak').textContent=st.best;document.getElementById('goalMode').textContent=state.goalMode==='weekdayWeekend'?'Split':'Daily';renderQuick();renderCups();renderUndo();renderHistory();renderTimeline()}
-function renderQuick(){const q=document.getElementById('quick');q.innerHTML='';quick.forEach(oz=>{const b=document.createElement('button');b.className='add';b.textContent='+'+oz;b.onclick=()=>add(oz);q.appendChild(b)});const c=document.createElement('button');c.className='add custom';c.textContent='+ Custom';c.onclick=openAmount;q.appendChild(c)}
-function renderCups(){const box=document.getElementById('cups');box.innerHTML='';state.cups.forEach(c=>{const b=document.createElement('button');b.className='cup'+(editingCups?' editmode':'');b.innerHTML=`${editingCups?'✎ ':''}+${esc(c.oz)}<span>${esc(c.name)}</span>`;b.onclick=()=>editingCups?openCup(c.id):add(c.oz,c.name);b.oncontextmenu=e=>{e.preventDefault();openCup(c.id)};box.appendChild(b)})}
-function renderUndo(){const last=today().drinks.at(-1),u=document.getElementById('undo');u.disabled=!last;u.textContent=last?`↶ Undo +${last.oz} oz`:'↶ Undo last drink'}
-function renderHistory(){const h=document.getElementById('history');h.innerHTML='';let sum=0;for(let i=6;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);const k=dayKey(d),oz=total(k),g=goalFor(k),p=Math.round(oz/g*100);sum+=oz;const el=document.createElement('button');el.className='day'+(oz>=g?' met':p>=80?' close':'')+(k===dayKey()?' today':'');el.innerHTML=`<div><div class="dow">${d.toLocaleDateString(undefined,{weekday:'short'})}</div><div class="oz">${oz}</div><div class="pct">${p}%</div></div>`;el.onclick=()=>openDay(k);h.appendChild(el)}document.getElementById('avg').textContent=`Avg ${Math.round(sum/7)} oz`}
-function openDay(k){const d=dateFromKey(k),oz=total(k),g=goalFor(k),list=drinks(k);document.getElementById('dayTitle').textContent=`${d.toLocaleDateString(undefined,{weekday:'long',month:'short',day:'numeric'})} · ${oz}/${g} oz`;const box=document.getElementById('dayDetails');box.innerHTML=list.length?'':'<div class="drink">No drinks logged</div>';[...list].reverse().forEach(x=>{const time=new Date(x.at).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'});const row=document.createElement('div');row.className='drink';row.innerHTML=`<span>${time} · ${esc(x.label||'Drink')}</span><strong>+${esc(x.oz)} oz</strong>`;box.appendChild(row)});document.getElementById('dayDialog').showModal()}
-function renderTimeline(){const box=document.getElementById('timeline'),btn=document.getElementById('toggleTimeline');box.className='timeline'+(timelineOpen?' show':'');btn.textContent=timelineOpen?'Hide':'Show';box.innerHTML='';const ds=[...drinks()].reverse();if(!ds.length){box.innerHTML='<div class="drink">No drinks logged yet</div>';return}ds.forEach(d=>{const time=new Date(d.at).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'});const row=document.createElement('div');row.className='drink';row.innerHTML=`<span>${time} · ${esc(d.label||'Drink')}</span><strong>+${esc(d.oz)} oz</strong>`;box.appendChild(row)})}
-function slosh(){const w=document.getElementById('water');w.classList.remove('slosh');void w.offsetWidth;w.classList.add('slosh')}
-function celebrate(){document.getElementById('hero').classList.remove('celebrate');void document.getElementById('hero').offsetWidth;document.getElementById('hero').classList.add('celebrate');navigator.vibrate?.([25,40,25]);const wrap=document.getElementById('confetti');wrap.innerHTML='';for(let i=0;i<24;i++){const d=document.createElement('div');d.className='dot';d.style.left=Math.random()*100+'vw';d.style.background=['#35aef4','#19a974','#ffd166','#ef476f'][i%4];d.style.animationDelay=Math.random()*0.25+'s';wrap.appendChild(d)}setTimeout(()=>wrap.innerHTML='',1200)}
-function esc(v){return String(v).replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]))}
-let timer;function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(timer);timer=setTimeout(()=>t.classList.remove('show'),1400)}
-function exportData(){const blob=new Blob([JSON.stringify(state,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='water-tracker-backup.json';a.click();URL.revokeObjectURL(a.href)}
-function importData(){const input=document.createElement('input');input.type='file';input.accept='application/json';input.onchange=()=>{const file=input.files[0];if(!file)return;const reader=new FileReader();reader.onload=()=>{try{const data=JSON.parse(reader.result);if(!data.days)throw new Error('bad');state={...defaults,...data};save();render();toast('Data imported')}catch{alert('That backup file was not valid.')}};reader.readAsText(file)};input.click()}
-async function checkForUpdate(){const banner=document.getElementById('updateBanner');try{const res=await fetch('app.js?check='+Date.now(),{cache:'no-store'}),txt=await res.text(),m=txt.match(/APP_VERSION='([^']+)'/);if(m&&m[1]!==APP_VERSION){banner.classList.add('show')}else{banner.classList.remove('show')}}catch{banner.classList.remove('show')}}
-async function forceUpdate(){toast('Updating...');try{if('serviceWorker' in navigator){const regs=await navigator.serviceWorker.getRegistrations();await Promise.all(regs.map(r=>r.update().catch(()=>undefined)));}if(window.caches){const keys=await caches.keys();await Promise.all(keys.map(k=>caches.delete(k)));}}catch{}const url=new URL(window.location.href);url.searchParams.set('refresh',Date.now());window.location.replace(url.toString())}
-function registerServiceWorker(){if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('service-worker.js').then(r=>r.update()).catch(()=>undefined))}}
-function wire(){document.getElementById('addCup').onclick=()=>openCup();document.getElementById('settings').onclick=openSettings;document.getElementById('undo').onclick=undo;document.getElementById('saveAmount').onclick=saveAmount;document.getElementById('saveCup').onclick=saveCup;document.getElementById('deleteCup').onclick=deleteCup;document.getElementById('saveSettings').onclick=saveSettings;document.getElementById('editCups').onclick=editCups;document.getElementById('restoreToday').onclick=restoreToday;document.getElementById('toggleTimeline').onclick=()=>{timelineOpen=!timelineOpen;renderTimeline()};document.getElementById('updateNow').onclick=forceUpdate;document.getElementById('exportData').onclick=exportData;document.getElementById('importData').onclick=importData;matchMedia('(prefers-color-scheme:dark)').addEventListener('change',applyTheme)}
-wire();registerServiceWorker();applyTheme();render();setTimeout(checkForUpdate,800);
+const build = window.WATER_TRACKER_BUILD;
+let state = loadState();
+let editingCupId = null;
+let editingCups = false;
+let timelineOpen = false;
+
+function goalFor(key = dayKey()) {
+  if (state.goalMode === 'weekdayWeekend') {
+    const day = dateFromKey(key).getDay();
+    return day === 0 || day === 6 ? Number(state.weekendGoal || state.goal) : Number(state.weekdayGoal || state.goal);
+  }
+  return Number(state.goal || build.defaultGoal);
+}
+
+function ensureToday() {
+  const key = dayKey();
+  if (!state.days[key]) state.days[key] = { drinks: [] };
+  return state.days[key];
+}
+
+function drinksFor(key = dayKey()) {
+  return state.days[key]?.drinks || [];
+}
+
+function totalFor(key = dayKey()) {
+  return drinksFor(key).reduce((sum, drink) => sum + Number(drink.oz || 0), 0);
+}
+
+function backupToday() {
+  const key = dayKey();
+  state.backups = state.backups || {};
+  state.backups[key] = deepClone(ensureToday());
+  const keys = Object.keys(state.backups).sort();
+  while (keys.length > 30) delete state.backups[keys.shift()];
+}
+
+function addDrink(oz, label = 'Quick add') {
+  oz = Number(oz);
+  if (!oz || oz < 1) return;
+  const before = totalFor();
+  const goal = goalFor();
+  ensureToday().drinks.push({ id: uid(), oz, label, at: new Date().toISOString() });
+  backupToday();
+  saveState(state);
+  render();
+  animateWater();
+  navigator.vibrate?.(20);
+  const after = totalFor();
+  if (before < goal && after >= goal) {
+    toast(`Goal hit: ${after} oz`);
+    celebrateGoal();
+  } else {
+    toast(`Added ${oz} oz`);
+  }
+}
+
+function undoDrink() {
+  const removed = ensureToday().drinks.pop();
+  if (!removed) return;
+  backupToday();
+  saveState(state);
+  render();
+  toast(`Undid ${removed.oz} oz`);
+}
+
+function resetToday() {
+  if (!confirm('Reset today to 0 oz? This only clears today on this device.')) return;
+  backupToday();
+  state.days[dayKey()] = { drinks: [] };
+  saveState(state);
+  render();
+  toast('Today reset');
+}
+
+function restoreToday() {
+  const key = dayKey();
+  const backup = state.backups?.[key];
+  if (!backup) {
+    toast('No backup for today');
+    return;
+  }
+  if (!confirm('Restore today from local backup? This replaces today’s current log.')) return;
+  state.days[key] = deepClone(backup);
+  saveState(state);
+  render();
+  toast('Today restored');
+}
+
+function streaks() {
+  let current = 0;
+  let best = 0;
+  let run = 0;
+  for (let i = 365; i >= 0; i--) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    const key = dayKey(d);
+    const met = totalFor(key) >= goalFor(key);
+    run = met ? run + 1 : 0;
+    best = Math.max(best, run);
+  }
+  for (let i = 0; i < 365; i++) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    const key = dayKey(d);
+    if (totalFor(key) >= goalFor(key)) current++; else break;
+  }
+  return { current, best };
+}
+
+function render() {
+  ensureToday();
+  const goal = goalFor();
+  const total = totalFor();
+  const percentRaw = goal ? (total / goal) * 100 : 0;
+  const percent = Math.min(100, Math.round(percentRaw));
+  $('todayTotal').textContent = total;
+  $('todayGoal').textContent = goal;
+  $('statusText').textContent = `${Math.round(percentRaw)}% complete`;
+  $('water').style.height = `${percent}%`;
+  const s = streaks();
+  $('currentStreak').textContent = s.current;
+  $('bestStreak').textContent = s.best;
+  $('goalModeLabel').textContent = state.goalMode === 'weekdayWeekend' ? 'Split' : 'Daily';
+  $('versionText').textContent = `Version ${build.version} · local-only`;
+  renderQuickButtons();
+  renderCups();
+  renderUndo();
+  renderHistory();
+  renderTimeline();
+}
+
+function renderQuickButtons() {
+  const box = $('quickButtons');
+  box.innerHTML = '';
+  build.quickAmounts.forEach(oz => {
+    const button = document.createElement('button');
+    button.className = 'add';
+    button.type = 'button';
+    button.textContent = `+${oz}`;
+    button.onclick = () => addDrink(oz);
+    box.appendChild(button);
+  });
+  const custom = document.createElement('button');
+  custom.className = 'add custom';
+  custom.type = 'button';
+  custom.textContent = '+ Custom';
+  custom.onclick = openAmountDialog;
+  box.appendChild(custom);
+}
+
+function renderCups() {
+  const box = $('cupButtons');
+  box.innerHTML = '';
+  state.cups.forEach(cup => {
+    const button = document.createElement('button');
+    button.className = `cup${editingCups ? ' editmode' : ''}`;
+    button.type = 'button';
+    button.innerHTML = `${editingCups ? '✎ ' : ''}+${escapeHtml(cup.oz)}<span>${escapeHtml(cup.name)}</span>`;
+    button.onclick = () => editingCups ? openCupDialog(cup.id) : addDrink(cup.oz, cup.name);
+    box.appendChild(button);
+  });
+}
+
+function renderUndo() {
+  const last = ensureToday().drinks.at(-1);
+  const button = $('undoButton');
+  button.disabled = !last;
+  button.textContent = last ? `↶ Undo +${last.oz} oz` : '↶ Undo last drink';
+}
+
+function renderHistory() {
+  const box = $('historyGrid');
+  box.innerHTML = '';
+  let sum = 0;
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    const key = dayKey(d);
+    const oz = totalFor(key);
+    const goal = goalFor(key);
+    const percent = Math.round((oz / goal) * 100);
+    sum += oz;
+    const day = document.createElement('button');
+    day.className = `day${oz >= goal ? ' met' : percent >= 80 ? ' close' : ''}${key === dayKey() ? ' today' : ''}`;
+    day.type = 'button';
+    day.innerHTML = `<div><div class="dow">${d.toLocaleDateString(undefined, { weekday: 'short' })}</div><div class="oz">${oz}</div><div class="pct">${percent}%</div></div>`;
+    day.onclick = () => openDayDialog(key);
+    box.appendChild(day);
+  }
+  $('weeklyAverage').textContent = `Avg ${Math.round(sum / 7)} oz`;
+}
+
+function renderTimeline() {
+  const box = $('timeline');
+  const button = $('toggleTimelineButton');
+  box.className = `timeline${timelineOpen ? ' show' : ''}`;
+  button.textContent = timelineOpen ? 'Hide' : 'Show';
+  box.innerHTML = '';
+  const list = [...drinksFor()].reverse();
+  if (!list.length) {
+    box.innerHTML = '<div class="drink">No drinks logged yet</div>';
+    return;
+  }
+  list.forEach(drink => box.appendChild(drinkRow(drink)));
+}
+
+function drinkRow(drink) {
+  const row = document.createElement('div');
+  row.className = 'drink';
+  row.innerHTML = `<span>${formatTime(drink.at)} · ${escapeHtml(drink.label || 'Drink')}</span><strong>+${escapeHtml(drink.oz)} oz</strong>`;
+  return row;
+}
+
+function openAmountDialog() {
+  $('amountInput').value = '';
+  $('amountDialog').showModal();
+  setTimeout(() => $('amountInput').focus(), 50);
+}
+
+function saveAmount(event) {
+  event.preventDefault();
+  const oz = Number($('amountInput').value);
+  if (!oz || oz < 1) {
+    alert('Enter a valid ounce amount.');
+    return;
+  }
+  closeDialog('amountDialog');
+  addDrink(oz, 'Custom amount');
+}
+
+function openCupDialog(id = null) {
+  editingCupId = id;
+  const cup = state.cups.find(c => c.id === id);
+  $('cupDialogTitle').textContent = cup ? 'Edit Cup' : 'Add Cup';
+  $('cupNameInput').value = cup?.name || '';
+  $('cupOzInput').value = cup?.oz || '';
+  $('deleteCupButton').hidden = !cup;
+  $('cupDialog').showModal();
+  setTimeout(() => $('cupNameInput').focus(), 50);
+}
+
+function saveCup(event) {
+  event.preventDefault();
+  const name = $('cupNameInput').value.trim();
+  const oz = Number($('cupOzInput').value);
+  if (!name || !oz || oz < 1) {
+    alert('Enter a cup name and valid ounce amount.');
+    return;
+  }
+  if (editingCupId) {
+    const cup = state.cups.find(c => c.id === editingCupId);
+    if (cup) Object.assign(cup, { name, oz });
+    toast('Cup updated');
+  } else {
+    state.cups.push({ id: uid(), name, oz });
+    toast('Cup added');
+  }
+  saveState(state);
+  closeDialog('cupDialog');
+  render();
+}
+
+function deleteCup() {
+  const cup = state.cups.find(c => c.id === editingCupId);
+  if (!cup) return;
+  if (!confirm(`Delete ${cup.name}?`)) return;
+  state.cups = state.cups.filter(c => c.id !== editingCupId);
+  saveState(state);
+  closeDialog('cupDialog');
+  render();
+  toast('Cup deleted');
+}
+
+function openSettings() {
+  $('dailyGoalInput').value = state.goal;
+  $('weekdayGoalInput').value = state.weekdayGoal || state.goal;
+  $('weekendGoalInput').value = state.weekendGoal || state.goal;
+  $('goalModeInput').value = state.goalMode || 'daily';
+  $('themeInput').value = state.theme || 'system';
+  $('versionText').textContent = `Version ${build.version} · local-only`;
+  $('settingsDialog').showModal();
+}
+
+function saveSettings(event) {
+  event.preventDefault();
+  const goal = Number($('dailyGoalInput').value);
+  const weekdayGoal = Number($('weekdayGoalInput').value);
+  const weekendGoal = Number($('weekendGoalInput').value);
+  if (!goal || !weekdayGoal || !weekendGoal) {
+    alert('Enter valid goals.');
+    return;
+  }
+  Object.assign(state, {
+    goal,
+    weekdayGoal,
+    weekendGoal,
+    goalMode: $('goalModeInput').value,
+    theme: $('themeInput').value
+  });
+  saveState(state);
+  applyTheme(state.theme);
+  closeDialog('settingsDialog');
+  render();
+  toast('Settings saved');
+}
+
+function openDayDialog(key) {
+  const date = dateFromKey(key);
+  const oz = totalFor(key);
+  const goal = goalFor(key);
+  $('dayTitle').textContent = `${date.toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' })} · ${oz}/${goal} oz`;
+  const box = $('dayDetails');
+  box.innerHTML = '';
+  const list = [...drinksFor(key)].reverse();
+  if (!list.length) box.innerHTML = '<div class="drink">No drinks logged</div>';
+  list.forEach(drink => box.appendChild(drinkRow(drink)));
+  $('dayDialog').showModal();
+}
+
+async function checkForUpdate() {
+  hideUpdateBanner();
+  try {
+    const response = await fetch(`version.txt?check=${Date.now()}`, { cache: 'no-store' });
+    const remote = (await response.text()).trim();
+    if (remote && remote !== build.version) showUpdateBanner();
+  } catch {
+    hideUpdateBanner();
+  }
+}
+
+async function updateApp() {
+  hideUpdateBanner();
+  $('updateNow').textContent = 'Updating...';
+  try {
+    if ('serviceWorker' in navigator) {
+      const regs = await navigator.serviceWorker.getRegistrations();
+      await Promise.all(regs.map(reg => reg.update().catch(() => undefined)));
+    }
+    if ('caches' in window) {
+      const keys = await caches.keys();
+      await Promise.all(keys.map(key => caches.delete(key)));
+    }
+  } catch {}
+  const url = new URL(window.location.href);
+  url.searchParams.set('refresh', Date.now());
+  window.location.replace(url.toString());
+}
+
+function importState() {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = 'application/json';
+  input.onchange = () => {
+    const file = input.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const imported = JSON.parse(reader.result);
+        if (!imported.days) throw new Error('Invalid backup');
+        state = { ...deepClone(defaultState), ...imported };
+        saveState(state);
+        render();
+        toast('Data imported');
+      } catch {
+        alert('That backup file was not valid.');
+      }
+    };
+    reader.readAsText(file);
+  };
+  input.click();
+}
+
+function escapeHtml(value) {
+  return String(value).replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
+}
+
+function registerServiceWorker() {
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('service-worker.js').then(reg => reg.update()).catch(() => undefined);
+    });
+  }
+}
+
+function wireEvents() {
+  $('updateNow').onclick = updateApp;
+  $('settingsButton').onclick = openSettings;
+  $('addCupButton').onclick = () => openCupDialog();
+  $('undoButton').onclick = undoDrink;
+  $('toggleTimelineButton').onclick = () => { timelineOpen = !timelineOpen; renderTimeline(); };
+  $('saveAmountButton').onclick = saveAmount;
+  $('saveCupButton').onclick = saveCup;
+  $('deleteCupButton').onclick = deleteCup;
+  $('saveSettingsButton').onclick = saveSettings;
+  $('editCupsButton').onclick = () => { editingCups = !editingCups; closeDialog('settingsDialog'); render(); toast(editingCups ? 'Cup edit mode on' : 'Cup edit mode off'); };
+  $('restoreTodayButton').onclick = restoreToday;
+  $('resetTodayButton').onclick = resetToday;
+  $('exportDataButton').onclick = () => exportState(state);
+  $('importDataButton').onclick = importState;
+  document.querySelectorAll('[data-close-dialog]').forEach(button => {
+    button.addEventListener('click', () => closeDialog(button.dataset.closeDialog));
+  });
+  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => applyTheme(state.theme));
+}
+
+wireEvents();
+registerServiceWorker();
+applyTheme(state.theme);
+render();
+checkForUpdate();
+setInterval(checkForUpdate, 5 * 60 * 1000);
