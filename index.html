@@ -11,7 +11,7 @@
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="icon.svg">
-  <link rel="stylesheet" href="style.css?v=2026-06-22-8">
+  <link rel="stylesheet" href="style.css?v=2026-06-22-9">
 </head>
 <body>
 <main class="app">
@@ -26,7 +26,7 @@
     <div class="grid" id="quick"></div>
   </section>
 
-  <section class="card"><div class="row"><h2>My Cups</h2><button class="small" id="addCup">+ Add Cup</button></div><div class="cups" id="cups"></div><p class="hint">Tap a cup to log it. Tap Edit Cups in Settings to rename, resize, or delete.</p></section>
+  <section class="card"><div class="row"><h2>My Cups</h2><button class="small" id="addCup">+ Add Cup</button></div><div class="cups" id="cups"></div><p class="hint">Tap a cup to log it. Use Edit Cups in Settings to rename, resize, or delete.</p></section>
   <button class="undo" id="undo" disabled>↶ Undo last drink</button>
   <section class="card"><div class="row"><h2>Last 7 Days</h2><span class="avg" id="avg">Avg 0 oz</span></div><div class="history" id="history"></div><p class="hint">Tap a day to see that day’s drinks.</p></section>
   <section class="card"><div class="row"><h2>Today’s Drinks</h2><button class="small" id="toggleTimeline">Show</button></div><div class="timeline" id="timeline"></div></section>
@@ -34,9 +34,9 @@
 
 <dialog id="amountDialog"><form class="modal" method="dialog"><h2>Add custom amount</h2><label>Ounces<input id="amountInput" type="number" inputmode="decimal" min="0" step="0.5" placeholder="24"></label><div class="actions"><button class="ghost" value="cancel">Cancel</button><button class="primary" id="saveAmount" value="default">Add</button></div></form></dialog>
 <dialog id="cupDialog"><form class="modal" method="dialog"><h2 id="cupTitle">Add Cup</h2><label>Name<input id="cupName" maxlength="18" placeholder="Owala"></label><label>Ounces<input id="cupOz" type="number" inputmode="decimal" min="0" step="0.5" placeholder="24"></label><div class="actions"><button class="ghost" value="cancel">Cancel</button><button class="primary" id="saveCup" value="default">Save</button></div><div class="actions"><button class="ghost" id="deleteCup" value="delete" style="display:none;color:#d64545">Delete Cup</button></div></form></dialog>
-<dialog id="settingsDialog"><form class="modal" method="dialog"><h2>Settings</h2><label>Goal mode<select id="goalModeInput"><option value="daily">Same every day</option><option value="weekdayWeekend">Weekday / weekend</option></select></label><label>Daily goal, oz<input id="goalInput" type="number" inputmode="numeric" min="1" max="400"></label><label>Weekday goal, oz<input id="weekdayGoalInput" type="number" inputmode="numeric" min="1" max="400"></label><label>Weekend goal, oz<input id="weekendGoalInput" type="number" inputmode="numeric" min="1" max="400"></label><label>Theme<select id="themeInput"><option value="system">System</option><option value="light">Light</option><option value="dark">Dark</option></select></label><div class="privacy">🔒 Private/local-only: logs are saved on this device in browser storage. No account, no server database, no cloud sync, no Apple Health.</div><div class="actions"><button class="ghost" value="cancel">Cancel</button><button class="primary" id="saveSettings" value="default">Save</button></div><div class="actions"><button class="ghost" id="editCups" value="edit">Edit Cups</button></div><div class="actions"><button class="ghost" id="exportData" value="export">Export</button><button class="ghost" id="importData" value="import">Import</button></div></form></dialog>
+<dialog id="settingsDialog"><form class="modal" method="dialog"><h2>Settings</h2><label>Goal mode<select id="goalModeInput"><option value="daily">Same every day</option><option value="weekdayWeekend">Weekday / weekend</option></select></label><label>Daily goal, oz<input id="goalInput" type="number" inputmode="numeric" min="1" max="400"></label><label>Weekday goal, oz<input id="weekdayGoalInput" type="number" inputmode="numeric" min="1" max="400"></label><label>Weekend goal, oz<input id="weekendGoalInput" type="number" inputmode="numeric" min="1" max="400"></label><label>Theme<select id="themeInput"><option value="system">System</option><option value="light">Light</option><option value="dark">Dark</option></select></label><div class="privacy">🔒 Private/local-only: logs are saved on this device in browser storage. No account, no server database, no cloud sync, no Apple Health.<br><br><span id="versionText">Version</span></div><div class="actions"><button class="ghost" value="cancel">Cancel</button><button class="primary" id="saveSettings" value="default">Save</button></div><div class="actions"><button class="ghost" id="editCups" value="edit">Edit Cups</button><button class="ghost" id="restoreToday" value="restore">Restore Today</button></div><div class="actions"><button class="ghost" id="exportData" value="export">Export</button><button class="ghost" id="importData" value="import">Import</button></div></form></dialog>
 <dialog id="dayDialog"><form class="modal" method="dialog"><h2 id="dayTitle">Day</h2><div id="dayDetails" class="timeline show"></div><div class="actions"><button class="primary" value="default">Done</button></div></form></dialog>
 <div class="toast" id="toast"></div><div class="confetti" id="confetti"></div>
-<script src="app.js?v=2026-06-22-8"></script>
+<script src="app.js?v=2026-06-22-9"></script>
 </body>
 </html>
