@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,minimum-scale=1,user-scalable=no,viewport-fit=cover" />
+  <meta name="theme-color" content="#eaf7ff" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="Water" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <title>Water Tracker</title>
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="icon" href="icon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="icon.svg" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <main class="app">
+    <section class="update" id="updateBanner" hidden><span>🚀 New version available</span><button id="updateNow" type="button">Update</button></section>
+    <header class="top"><div><p class="tiny">Today</p><h1>Water Tracker</h1></div><button class="gear" id="settingsButton" type="button" aria-label="Settings">⚙️</button></header>
+    <section class="hero" id="hero"><div class="total"><span class="num" id="todayTotal">0</span><span class="goal">/ <span id="todayGoal">120</span> oz</span></div><div class="status" id="statusText">0% complete</div><div class="stats"><span class="pill">🔥 Streak <strong id="currentStreak">0</strong></span><span class="pill">🏆 Best <strong id="bestStreak">0</strong></span><span class="pill">🎯 Goal <strong id="goalModeLabel">Daily</strong></span></div><div class="bottleArea"><div class="bottle" aria-hidden="true"><div class="mark"></div><div class="water" id="water"></div><div class="shine"></div></div></div><div class="grid" id="quickButtons"></div></section>
+    <section class="card"><div class="row"><h2>My Cups</h2><button class="small" id="addCupButton" type="button">+ Add Cup</button></div><div class="cups" id="cupButtons"></div><p class="hint">Tap a cup to log it. Use Edit Cups in Settings to rename, resize, or delete.</p></section>
+    <button class="undo" id="undoButton" type="button" disabled>↶ Undo last drink</button>
+    <section class="card"><div class="row"><h2>Last 7 Days</h2><span class="avg" id="weeklyAverage">Avg 0 oz</span></div><div class="history" id="historyGrid"></div><p class="hint">Tap a day to see or edit that day’s drinks.</p></section>
+    <section class="card"><div class="row"><h2>Today’s Drinks</h2><button class="small" id="toggleTimelineButton" type="button">Show</button></div><div class="timeline" id="timeline"></div></section>
+  </main>
+  <dialog id="amountDialog"><form class="modal" method="dialog"><h2>Add custom amount</h2><label>Ounces<input id="amountInput" type="number" inputmode="decimal" min="0" step="0.5" placeholder="24" /></label><div class="actions"><button class="ghost" value="cancel" type="button" data-close-dialog="amountDialog">Cancel</button><button class="primary" id="saveAmountButton" value="default" type="submit">Add</button></div></form></dialog>
+  <dialog id="cupDialog"><form class="modal" method="dialog"><h2 id="cupDialogTitle">Add Cup</h2><label>Name<input id="cupNameInput" maxlength="18" placeholder="Owala" /></label><label>Ounces<input id="cupOzInput" type="number" inputmode="decimal" min="0" step="0.5" placeholder="24" /></label><div class="actions"><button class="ghost" value="cancel" type="button" data-close-dialog="cupDialog">Cancel</button><button class="primary" id="saveCupButton" value="default" type="submit">Save</button></div><div class="actions"><button class="ghost danger" id="deleteCupButton" value="delete" type="button" hidden>Delete Cup</button></div></form></dialog>
+  <dialog id="settingsDialog"><form class="modal" method="dialog"><h2>Settings</h2><label>Goal mode<select id="goalModeInput"><option value="daily">Same every day</option><option value="weekdayWeekend">Weekday / weekend</option></select></label><label>Daily goal, oz<input id="dailyGoalInput" type="number" inputmode="numeric" min="1" max="400" /></label><label>Weekday goal, oz<input id="weekdayGoalInput" type="number" inputmode="numeric" min="1" max="400" /></label><label>Weekend goal, oz<input id="weekendGoalInput" type="number" inputmode="numeric" min="1" max="400" /></label><label>Theme<select id="themeInput"><option value="system">System</option><option value="light">Light</option><option value="dark">Dark</option></select></label><div class="privacy">🔒 Private/local-only: logs are saved on this device in browser storage. No account, no server database, no cloud sync, no Apple Health.<br><br><span id="versionText">Version</span></div><div class="actions"><button class="ghost" value="cancel" type="button" data-close-dialog="settingsDialog">Cancel</button><button class="primary" id="saveSettingsButton" value="default" type="submit">Save</button></div><div class="actions"><button class="ghost" id="editCupsButton" type="button">Edit Cups</button><button class="ghost" id="restoreTodayButton" type="button">Restore Today</button></div><div class="actions"><button class="ghost" id="resetTodayButton" type="button">Reset Today</button><button class="ghost" id="exportDataButton" type="button">Export</button><button class="ghost" id="importDataButton" type="button">Import</button></div></form></dialog>
+  <dialog id="dayDialog"><form class="modal" method="dialog"><h2 id="dayTitle">Day</h2><div id="dayDetails" class="timeline show"></div><div class="actions"><button class="primary" value="default" type="button" data-close-dialog="dayDialog">Done</button></div></form></dialog>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div><div class="confetti" id="confetti" aria-hidden="true"></div>
+  <script src="config.js"></script><script src="storage.js"></script><script src="date.js"></script><script src="ui.js"></script><script src="app.js"></script><script src="settings-v14.js"></script><script src="touch-v15.js"></script><script src="edit-days-v16.js"></script>
+</body>
+</html>
