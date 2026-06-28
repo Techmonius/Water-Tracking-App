@@ -3,6 +3,8 @@ let state = loadState();
 let editingCupId = null;
 let editingCups = false;
 let timelineOpen = false;
+let selectedDayKey = null;
+let modalScrollY = 0;
 
 function goalFor(key = dayKey()) {
   if (state.goalMode === 'weekdayWeekend') {
@@ -12,8 +14,7 @@ function goalFor(key = dayKey()) {
   return Number(state.goal || build.defaultGoal);
 }
 
-function ensureToday() {
-  const key = dayKey();
+function ensureDay(key = dayKey()) {
   if (!state.days[key]) state.days[key] = { drinks: [] };
   return state.days[key];
 }
@@ -26,38 +27,43 @@ function totalFor(key = dayKey()) {
   return drinksFor(key).reduce((sum, drink) => sum + Number(drink.oz || 0), 0);
 }
 
-function backupToday() {
-  const key = dayKey();
+function isoForDay(key) {
+  const [year, month, day] = key.split('-').map(Number);
+  const now = new Date();
+  return new Date(year, month - 1, day, now.getHours(), now.getMinutes(), now.getSeconds()).toISOString();
+}
+
+function backupDay(key = dayKey()) {
   state.backups = state.backups || {};
-  state.backups[key] = deepClone(ensureToday());
+  state.backups[key] = deepClone(ensureDay(key));
   const keys = Object.keys(state.backups).sort();
   while (keys.length > 30) delete state.backups[keys.shift()];
 }
 
-function addDrink(oz, label = 'Quick add') {
+function addDrink(oz, label = 'Quick add', key = dayKey()) {
   oz = Number(oz);
   if (!oz || oz < 1) return;
-  const before = totalFor();
-  const goal = goalFor();
-  ensureToday().drinks.push({ id: uid(), oz, label, at: new Date().toISOString() });
-  backupToday();
+  const before = totalFor(key);
+  const goal = goalFor(key);
+  ensureDay(key).drinks.push({ id: uid(), oz, label, at: key === dayKey() ? new Date().toISOString() : isoForDay(key) });
+  backupDay(key);
   saveState(state);
   render();
-  animateWater();
+  if (key === dayKey()) animateWater();
   navigator.vibrate?.(20);
-  const after = totalFor();
-  if (before < goal && after >= goal) {
+  const after = totalFor(key);
+  if (key === dayKey() && before < goal && after >= goal) {
     toast(`Goal hit: ${after} oz`);
     celebrateGoal();
   } else {
-    toast(`Added ${oz} oz`);
+    toast(key === dayKey() ? `Added ${oz} oz` : `Added ${oz} oz to that day`);
   }
 }
 
 function undoDrink() {
-  const removed = ensureToday().drinks.pop();
+  const removed = ensureDay().drinks.pop();
   if (!removed) return;
-  backupToday();
+  backupDay();
   saveState(state);
   render();
   toast(`Undid ${removed.oz} oz`);
@@ -65,11 +71,21 @@ function undoDrink() {
 
 function resetToday() {
   if (!confirm('Reset today to 0 oz? This only clears today on this device.')) return;
-  backupToday();
+  backupDay();
   state.days[dayKey()] = { drinks: [] };
   saveState(state);
   render();
   toast('Today reset');
+}
+
+function resetDay(key) {
+  if (!confirm('Reset this day to 0 oz?')) return;
+  backupDay(key);
+  state.days[key] = { drinks: [] };
+  saveState(state);
+  render();
+  openDayDialog(key);
+  toast('Day reset');
 }
 
 function restoreToday() {
@@ -84,6 +100,25 @@ function restoreToday() {
   saveState(state);
   render();
   toast('Today restored');
+}
+
+function clearAllData() {
+  if (!confirm('Clear ALL water tracker data on this device? This deletes logs, cups, goals, backups, and settings.')) return;
+  if (!confirm('Last chance: this cannot be undone unless you exported a backup. Clear everything?')) return;
+  localStorage.removeItem(build.storageKey);
+  location.reload();
+}
+
+function deleteDrinkFromDay(key, id) {
+  const day = state.days[key];
+  if (!day) return;
+  if (!confirm('Delete this drink entry?')) return;
+  backupDay(key);
+  day.drinks = day.drinks.filter(drink => drink.id !== id);
+  saveState(state);
+  render();
+  openDayDialog(key);
+  toast('Entry deleted');
 }
 
 function streaks() {
@@ -108,7 +143,7 @@ function streaks() {
 }
 
 function render() {
-  ensureToday();
+  ensureDay();
   const goal = goalFor();
   const total = totalFor();
   const percentRaw = goal ? (total / goal) * 100 : 0;
@@ -127,6 +162,7 @@ function render() {
   renderUndo();
   renderHistory();
   renderTimeline();
+  hideUpdateBanner();
 }
 
 function renderQuickButtons() {
@@ -162,7 +198,7 @@ function renderCups() {
 }
 
 function renderUndo() {
-  const last = ensureToday().drinks.at(-1);
+  const last = ensureDay().drinks.at(-1);
   const button = $('undoButton');
   button.disabled = !last;
   button.textContent = last ? `↶ Undo +${last.oz} oz` : '↶ Undo last drink';
@@ -178,7 +214,7 @@ function renderHistory() {
     const key = dayKey(d);
     const oz = totalFor(key);
     const goal = goalFor(key);
-    const percent = Math.round((oz / goal) * 100);
+    const percent = goal ? Math.round((oz / goal) * 100) : 0;
     sum += oz;
     const day = document.createElement('button');
     day.className = `day${oz >= goal ? ' met' : percent >= 80 ? ' close' : ''}${key === dayKey() ? ' today' : ''}`;
@@ -204,16 +240,25 @@ function renderTimeline() {
   list.forEach(drink => box.appendChild(drinkRow(drink)));
 }
 
-function drinkRow(drink) {
+function drinkRow(drink, options = {}) {
   const row = document.createElement('div');
   row.className = 'drink';
   row.innerHTML = `<span>${formatTime(drink.at)} · ${escapeHtml(drink.label || 'Drink')}</span><strong>+${escapeHtml(drink.oz)} oz</strong>`;
+  if (options.deleteKey && drink.id) {
+    const del = document.createElement('button');
+    del.className = 'ghost danger';
+    del.type = 'button';
+    del.textContent = 'Delete';
+    del.style.flex = '0 0 auto';
+    del.onclick = () => deleteDrinkFromDay(options.deleteKey, drink.id);
+    row.appendChild(del);
+  }
   return row;
 }
 
 function openAmountDialog() {
   $('amountInput').value = '';
-  $('amountDialog').showModal();
+  showDialog('amountDialog');
   setTimeout(() => $('amountInput').focus(), 50);
 }
 
@@ -235,7 +280,7 @@ function openCupDialog(id = null) {
   $('cupNameInput').value = cup?.name || '';
   $('cupOzInput').value = cup?.oz || '';
   $('deleteCupButton').hidden = !cup;
-  $('cupDialog').showModal();
+  showDialog('cupDialog');
   setTimeout(() => $('cupNameInput').focus(), 50);
 }
 
@@ -278,7 +323,7 @@ function openSettings() {
   $('goalModeInput').value = state.goalMode || 'daily';
   $('themeInput').value = state.theme || 'system';
   $('versionText').textContent = `Version ${build.version} · local-only`;
-  $('settingsDialog').showModal();
+  showDialog('settingsDialog');
 }
 
 function saveSettings(event) {
@@ -305,16 +350,40 @@ function saveSettings(event) {
 }
 
 function openDayDialog(key) {
+  selectedDayKey = key;
   const date = dateFromKey(key);
   const oz = totalFor(key);
   const goal = goalFor(key);
   $('dayTitle').textContent = `${date.toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' })} · ${oz}/${goal} oz`;
   const box = $('dayDetails');
   box.innerHTML = '';
+  const actions = document.createElement('div');
+  actions.className = 'actions';
+  const add = document.createElement('button');
+  add.className = 'primary';
+  add.type = 'button';
+  add.textContent = '+ Drink to this day';
+  add.onclick = () => addDrinkToSelectedDay(key);
+  const reset = document.createElement('button');
+  reset.className = 'ghost danger';
+  reset.type = 'button';
+  reset.textContent = 'Reset Day';
+  reset.onclick = () => resetDay(key);
+  actions.appendChild(add);
+  actions.appendChild(reset);
+  box.appendChild(actions);
   const list = [...drinksFor(key)].reverse();
-  if (!list.length) box.innerHTML = '<div class="drink">No drinks logged</div>';
-  list.forEach(drink => box.appendChild(drinkRow(drink)));
-  $('dayDialog').showModal();
+  if (!list.length) box.insertAdjacentHTML('beforeend', '<div class="drink">No drinks logged</div>');
+  list.forEach(drink => box.appendChild(drinkRow(drink, { deleteKey: key })));
+  showDialog('dayDialog');
+}
+
+function addDrinkToSelectedDay(key) {
+  const raw = prompt('Ounces to add to this day:');
+  const oz = Number(raw);
+  if (!oz || oz < 1) return;
+  addDrink(oz, 'Manual edit', key);
+  openDayDialog(key);
 }
 
 async function checkForUpdate() {
@@ -375,6 +444,46 @@ function escapeHtml(value) {
   return String(value).replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
 }
 
+function showDialog(id) {
+  lockPageScroll();
+  $(id).showModal();
+}
+
+function closeDialog(id) {
+  const dialog = $(id);
+  if (dialog && dialog.open) dialog.close();
+  unlockPageScrollIfReady();
+}
+
+function lockPageScroll() {
+  if (document.body.dataset.locked === 'true') return;
+  modalScrollY = window.scrollY || 0;
+  document.body.dataset.locked = 'true';
+  document.body.style.position = 'fixed';
+  document.body.style.top = `-${modalScrollY}px`;
+  document.body.style.left = '0';
+  document.body.style.right = '0';
+  document.body.style.width = '100%';
+}
+
+function unlockPageScrollIfReady() {
+  setTimeout(() => {
+    if (document.querySelector('dialog[open]')) return;
+    document.body.dataset.locked = 'false';
+    document.body.style.position = '';
+    document.body.style.top = '';
+    document.body.style.left = '';
+    document.body.style.right = '';
+    document.body.style.width = '';
+    window.scrollTo(0, modalScrollY);
+  }, 0);
+}
+
+function preventZoomGestures() {
+  document.addEventListener('gesturestart', event => event.preventDefault());
+  document.addEventListener('dblclick', event => event.preventDefault(), { passive: false });
+}
+
 function registerServiceWorker() {
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
@@ -393,17 +502,25 @@ function wireEvents() {
   $('saveCupButton').onclick = saveCup;
   $('deleteCupButton').onclick = deleteCup;
   $('saveSettingsButton').onclick = saveSettings;
-  $('editCupsButton').onclick = () => { editingCups = !editingCups; closeDialog('settingsDialog'); render(); toast(editingCups ? 'Cup edit mode on' : 'Cup edit mode off'); };
+  $('editCupsButton').onclick = () => {
+    editingCups = !editingCups;
+    closeDialog('settingsDialog');
+    render();
+    toast(editingCups ? 'Cup edit mode on. Tap a cup to edit it; open Settings > Edit Cups again to turn it off.' : 'Cup edit mode off', 3800);
+  };
   $('restoreTodayButton').onclick = restoreToday;
   $('resetTodayButton').onclick = resetToday;
+  $('clearAllDataButton').onclick = clearAllData;
   $('exportDataButton').onclick = () => exportState(state);
   $('importDataButton').onclick = importState;
   document.querySelectorAll('[data-close-dialog]').forEach(button => {
     button.addEventListener('click', () => closeDialog(button.dataset.closeDialog));
   });
+  document.querySelectorAll('dialog').forEach(dialog => dialog.addEventListener('close', unlockPageScrollIfReady));
   window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => applyTheme(state.theme));
 }
 
+preventZoomGestures();
 wireEvents();
 registerServiceWorker();
 applyTheme(state.theme);
