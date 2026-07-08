@@ -5,6 +5,31 @@ const TELEMETRY = {
   sessionKey: 'waterTracker_sessionId'
 };
 
+const EVENT_LABELS = {
+  app_opened: 'App opened',
+  drink_logged: 'Drink logged',
+  cup_logged: 'Saved cup logged',
+  settings_opened: 'Settings opened',
+  add_cup_opened: 'Add cup opened',
+  undo_used: 'Undo used',
+  timeline_toggled: 'Timeline toggled',
+  custom_amount_added: 'Custom amount added',
+  cup_saved: 'Cup saved',
+  cup_deleted: 'Cup deleted',
+  settings_saved: 'Settings saved',
+  edit_cups_toggled: 'Edit cups toggled',
+  restore_today_used: 'Restore today used',
+  reset_today_used: 'Reset today used',
+  clear_all_data_clicked: 'Clear all data clicked',
+  export_used: 'Export used',
+  import_used: 'Import used',
+  update_clicked: 'Update clicked',
+  previous_day_add_opened: 'Previous day add opened',
+  previous_day_reset_clicked: 'Previous day reset clicked',
+  previous_day_entry_delete_clicked: 'Previous day entry delete clicked',
+  error: 'Error'
+};
+
 function telemetryInstallId() {
   let id = localStorage.getItem(TELEMETRY.installKey);
   if (!id) {
@@ -30,10 +55,22 @@ function deviceKind() {
   return 'Other';
 }
 
+function telemetrySummary(eventName, data = {}) {
+  const label = EVENT_LABELS[eventName] || eventName.replaceAll('_', ' ');
+  const useful = Object.entries(data)
+    .filter(([, value]) => value !== undefined && value !== null && value !== '')
+    .map(([key, value]) => `${key}: ${String(value).slice(0, 60)}`)
+    .join(', ');
+  return useful ? `${label} — ${useful}` : label;
+}
+
 function trackEvent(eventName, data = {}) {
   if (!TELEMETRY.enabled || !TELEMETRY.endpoint) return;
+  const now = new Date();
   const payload = {
     event: eventName,
+    label: EVENT_LABELS[eventName] || eventName.replaceAll('_', ' '),
+    summary: telemetrySummary(eventName, data),
     data,
     installId: telemetryInstallId(),
     sessionId: telemetrySessionId(),
@@ -41,7 +78,10 @@ function trackEvent(eventName, data = {}) {
     device: deviceKind(),
     screen: `${window.innerWidth}x${window.innerHeight}`,
     timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || '',
-    timestamp: new Date().toISOString()
+    standalone: Boolean(window.matchMedia && window.matchMedia('(display-mode: standalone)').matches),
+    localDate: now.toLocaleDateString(),
+    localTime: now.toLocaleTimeString(),
+    timestamp: now.toISOString()
   };
   try {
     fetch(TELEMETRY.endpoint, {
