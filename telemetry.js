@@ -1,6 +1,6 @@
 const TELEMETRY = {
-  endpoint: '',
-  enabled: false,
+  endpoint: 'https://script.google.com/macros/s/AKfycbykCIKxRnB_gQC0IOHrl3X5wSfAdC6chsxeJQSlO1wsd762PlF_oWEvt5JDjH1xGIZb-A/exec',
+  enabled: true,
   installKey: 'waterTracker_installId',
   sessionKey: 'waterTracker_sessionId'
 };
