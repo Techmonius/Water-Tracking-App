@@ -1,118 +1,121 @@
 # Water Tracker Beta Telemetry Setup
 
-Telemetry is disabled by default. It only sends events after you paste your Google Apps Script web app URL into `telemetry.js` and set `enabled: true`.
+Telemetry is enabled in the app and points to the Google Apps Script endpoint used for the beta.
 
-## What gets collected
+## Sheet tab
 
-The app can collect beta usage events such as:
-
-- app opened
-- drink logged
-- undo used
-- custom amount used
-- cup added / edited / deleted
-- settings saved
-- previous day edited
-- reset today / reset day
-- export / import used
-- JavaScript errors
-
-The app does **not** send cup names, drink history, exact water totals for every day, name, email, GPS, contacts, or account information.
-
-## Step 1: Create the Google Sheet
-
-Create a Google Sheet with one tab named:
+Use one tab named:
 
 ```text
 events
 ```
 
-In row 1, add these headers:
+Recommended header row:
 
 ```text
-timestamp,installId,sessionId,version,device,screen,timezone,event,data
+Received At	App Time	Local Date	Local Time	Event	Summary	Install ID	Session ID	Version	Device	Screen	Timezone	Standalone	Raw Data
 ```
 
-## Step 2: Create the Apps Script
+## Apps Script backend
 
-In the Sheet, go to:
-
-Extensions → Apps Script
-
-Paste this code:
+This version writes human-readable rows and trims the sheet so it does not grow forever. Change `MAX_ROWS_TO_KEEP` if you want more or fewer stored events.
 
 ```javascript
 const SHEET_NAME = 'events';
+const MAX_ROWS_TO_KEEP = 5000;
 
 function doPost(e) {
   try {
     const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAME);
-    const body = JSON.parse(e.postData.contents || '{}');
+    if (!sheet) throw new Error('Missing sheet tab named events');
+
+    ensureHeader(sheet);
+
+    const body = JSON.parse((e && e.postData && e.postData.contents) || '{}');
+    const receivedAt = new Date();
+
     sheet.appendRow([
-      body.timestamp || new Date().toISOString(),
-      body.installId || '',
-      body.sessionId || '',
+      receivedAt,
+      body.timestamp || '',
+      body.localDate || '',
+      body.localTime || '',
+      body.label || body.event || '',
+      body.summary || body.event || '',
+      shortId(body.installId),
+      shortId(body.sessionId),
       body.version || '',
       body.device || '',
       body.screen || '',
       body.timezone || '',
-      body.event || '',
+      body.standalone === true ? 'Yes' : 'No',
       JSON.stringify(body.data || {})
     ]);
-    return ContentService.createTextOutput(JSON.stringify({ ok: true })).setMimeType(ContentService.MimeType.JSON);
+
+    trimOldRows(sheet);
+
+    return ContentService
+      .createTextOutput(JSON.stringify({ ok: true }))
+      .setMimeType(ContentService.MimeType.JSON);
+
   } catch (err) {
-    return ContentService.createTextOutput(JSON.stringify({ ok: false, error: String(err) })).setMimeType(ContentService.MimeType.JSON);
+    return ContentService
+      .createTextOutput(JSON.stringify({ ok: false, error: String(err) }))
+      .setMimeType(ContentService.MimeType.JSON);
   }
+}
+
+function ensureHeader(sheet) {
+  const headers = [
+    'Received At',
+    'App Time',
+    'Local Date',
+    'Local Time',
+    'Event',
+    'Summary',
+    'Install ID',
+    'Session ID',
+    'Version',
+    'Device',
+    'Screen',
+    'Timezone',
+    'Standalone',
+    'Raw Data'
+  ];
+
+  const first = sheet.getRange(1, 1, 1, headers.length).getValues()[0];
+  const needsHeader = first.every(cell => cell === '');
+  if (needsHeader) {
+    sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
+    sheet.setFrozenRows(1);
+  }
+}
+
+function trimOldRows(sheet) {
+  const lastRow = sheet.getLastRow();
+  const maxIncludingHeader = MAX_ROWS_TO_KEEP + 1;
+  if (lastRow <= maxIncludingHeader) return;
+
+  const rowsToDelete = lastRow - maxIncludingHeader;
+  sheet.deleteRows(2, rowsToDelete);
+}
+
+function shortId(id) {
+  if (!id) return '';
+  return String(id).slice(0, 8);
 }
 ```
 
-## Step 3: Deploy the web app
+## Deploy settings
 
 Deploy → New deployment → Web app
 
-Use these settings:
+Use:
 
 - Execute as: Me
 - Who has access: Anyone
 
-Copy the web app URL.
+After updating the Apps Script, use **Deploy → Manage deployments → Edit → New version → Deploy**.
 
-## Step 4: Enable telemetry in the app
+## Storage control
 
-In `telemetry.js`, change:
-
-```javascript
-endpoint: '',
-enabled: false,
-```
-
-to:
-
-```javascript
-endpoint: 'YOUR_GOOGLE_APPS_SCRIPT_WEB_APP_URL',
-enabled: true,
-```
-
-## Step 5: Test
-
-Open the app and log one drink. A new row should appear in the `events` tab.
-
-## Useful starter formulas
-
-Daily active users:
-
-```text
-=COUNTUNIQUE(FILTER(B:B, A:A>=TODAY()))
-```
-
-Events by type:
-
-```text
-=QUERY(H:I,"select H, count(H) where H is not null group by H order by count(H) desc",1)
-```
-
-Versions in use:
-
-```text
-=QUERY(D:D,"select D, count(D) where D is not null group by D order by count(D) desc",1)
-```
+The backend keeps only the latest `MAX_ROWS_TO_KEEP` events plus the header row. At the default of 5000 rows, this should stay tiny in Google Drive terms.
