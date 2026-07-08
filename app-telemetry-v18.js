@@ -5,22 +5,54 @@
     try { trackEvent(name, data || {}); } catch {}
   }
 
-  safeTrack('app_opened', {
+  function numberFromText(text) {
+    const match = String(text || '').match(/\d+(?:\.\d+)?/);
+    return match ? Number(match[0]) : '';
+  }
+
+  function featureForEvent(name) {
+    if (name.includes('drink') || name.includes('cup_logged') || name.includes('custom_amount')) return 'Logging';
+    if (name.includes('settings')) return 'Settings';
+    if (name.includes('previous_day')) return 'Previous Day Editing';
+    if (name.includes('export') || name.includes('import')) return 'Backup';
+    if (name.includes('reset') || name.includes('restore') || name.includes('clear')) return 'Data Management';
+    if (name.includes('undo')) return 'Correction';
+    if (name.includes('error')) return 'Error';
+    return 'General';
+  }
+
+  function withFeature(name, data) {
+    return Object.assign({ feature: featureForEvent(name) }, data || {});
+  }
+
+  safeTrack('app_opened', withFeature('app_opened', {
     path: location.pathname,
-    standalone: window.matchMedia && window.matchMedia('(display-mode: standalone)').matches
-  });
+    mode: window.matchMedia && window.matchMedia('(display-mode: standalone)').matches ? 'Home Screen' : 'Browser'
+  }));
 
   document.addEventListener('click', function(event){
     const target = event.target.closest('button');
     if (!target) return;
 
+    const text = target.textContent.trim();
+
     if (target.classList.contains('add')) {
-      safeTrack('drink_logged', { source: target.textContent.trim() });
+      const amount = numberFromText(text);
+      safeTrack('drink_logged', withFeature('drink_logged', {
+        source: text,
+        quickButton: text.startsWith('+') ? text : '',
+        amountOz: amount,
+        mode: 'quick_button'
+      }));
       return;
     }
 
     if (target.classList.contains('cup')) {
-      safeTrack('cup_logged', { editMode: target.classList.contains('editmode') });
+      const amount = numberFromText(text);
+      safeTrack('cup_logged', withFeature('cup_logged', {
+        amountOz: amount,
+        mode: target.classList.contains('editmode') ? 'cup_edit' : 'saved_cup'
+      }));
       return;
     }
 
@@ -43,16 +75,18 @@
       updateNow: 'update_clicked'
     };
 
-    if (map[id]) safeTrack(map[id]);
+    if (map[id]) {
+      safeTrack(map[id], withFeature(map[id], { control: id }));
+    }
 
-    if (target.textContent && target.textContent.includes('Drink to this day')) {
-      safeTrack('previous_day_add_opened');
+    if (text.includes('Drink to this day')) {
+      safeTrack('previous_day_add_opened', withFeature('previous_day_add_opened', { control: 'day_add' }));
     }
-    if (target.textContent && target.textContent.includes('Reset Day')) {
-      safeTrack('previous_day_reset_clicked');
+    if (text.includes('Reset Day')) {
+      safeTrack('previous_day_reset_clicked', withFeature('previous_day_reset_clicked', { control: 'day_reset' }));
     }
-    if (target.textContent && target.textContent.trim() === 'Delete') {
-      safeTrack('previous_day_entry_delete_clicked');
+    if (text === 'Delete') {
+      safeTrack('previous_day_entry_delete_clicked', withFeature('previous_day_entry_delete_clicked', { control: 'day_entry_delete' }));
     }
   }, true);
 })();
