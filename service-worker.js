@@ -1,4 +1,4 @@
-const CACHE_NAME = 'water-tracker-2026-06-22-24';
+const CACHE_NAME = 'water-tracker-2026-06-22-25';
 const ASSETS = ['./','./index.html','./v18.html','./styles.css','./engagement-v22.css','./engage-plus-v23.css','./plant-plus-v24.css','./config.js','./storage.js','./date.js','./ui.js','./telemetry.js','./app.js','./app-telemetry-v18.js','./progress-v22.js','./achievements-v22.js','./plant-calendar-v23.js','./goal-celebration-v23.js','./living-plant-v24.js','./manifest.webmanifest','./icon.svg','./version.txt'];
 
 self.addEventListener('install', event => {
