@@ -1,0 +1,9 @@
+(function(){
+function sDay(k){let oz=(state.days[k]?.drinks||[]).reduce((a,d)=>a+Number(d.oz||0),0);let g=goalFor(k);return{oz,g,p:g?oz/g:0};}
+function plantStage(){let met=0;Object.keys(state.days||{}).forEach(k=>{let d=sDay(k);if(d.oz>=d.g)met++;});return met>=30?['🌳','Mighty Hydration Tree']:met>=14?['🪴','Thriving Plant']:met>=7?['🌿','Growing Strong']:met>=3?['🌱','Fresh Sprout']:['🫘','Tiny Seed'];}
+function key(d){return dayKey(d)}
+function renderMonth(){let now=new Date(),y=now.getFullYear(),m=now.getMonth();let first=new Date(y,m,1),last=new Date(y,m+1,0);let html='';for(let i=0;i<first.getDay();i++)html+='<div></div>';for(let day=1;day<=last.getDate();day++){let d=new Date(y,m,day),k=key(d),x=sDay(k),cls=x.oz>=x.g?'met':x.oz>0?'partial':'';if(k===dayKey())cls+=' today';html+='<div class="monthCell '+cls+'">'+day+'</div>';}return html;}
+function renderPlantCalendar(){let anchor=document.getElementById('progressCard')||document.querySelector('.history')?.closest('.card');if(!anchor)return;let p=plantStage();let t=sDay(dayKey());let card=document.getElementById('plantCard');let html='<div class="row"><h2>Plant</h2><span class="avg">'+p[1]+'</span></div><div class="plantHero"><div class="plantEmoji">'+p[0]+'</div><div><p class="hint">Hit your goal to help your plant grow.</p><p class="hint">Today: '+t.oz+' / '+t.g+' oz</p></div></div><h2 style="margin-top:16px">This Month</h2><div class="monthGrid">'+renderMonth()+'</div>';
+if(!card){card=document.createElement('section');card.className='card';card.id='plantCard';anchor.parentNode.insertBefore(card,anchor.nextSibling);}card.innerHTML=html;}
+let old=window.render||render;window.render=function(){old();setTimeout(renderPlantCalendar,0)};setTimeout(renderPlantCalendar,300);
+})();
