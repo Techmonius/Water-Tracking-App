@@ -1,5 +1,5 @@
-const CACHE_NAME = 'water-tracker-2026-06-22-19';
-const ASSETS = ['./','./index.html','./v18.html','./styles.css','./config.js','./storage.js','./date.js','./ui.js','./telemetry.js','./app.js','./app-telemetry-v18.js','./manifest.webmanifest','./icon.svg','./version.txt'];
+const CACHE_NAME = 'water-tracker-2026-06-22-22';
+const ASSETS = ['./','./index.html','./v18.html','./styles.css','./engagement-v22.css','./config.js','./storage.js','./date.js','./ui.js','./telemetry.js','./app.js','./app-telemetry-v18.js','./progress-v22.js','./achievements-v22.js','./manifest.webmanifest','./icon.svg','./version.txt'];
 
 self.addEventListener('install', event => {
   self.skipWaiting();
