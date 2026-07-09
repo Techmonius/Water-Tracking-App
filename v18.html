@@ -12,6 +12,7 @@
   <link rel="icon" href="icon.svg" type="image/svg+xml" />
   <link rel="apple-touch-icon" href="icon.svg" />
   <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="engagement-v22.css" />
 </head>
 <body>
   <main class="app">
@@ -28,6 +29,6 @@
   <dialog id="settingsDialog"><form class="modal" method="dialog"><h2>Settings</h2><label>Goal mode<select id="goalModeInput"><option value="daily">Same every day</option><option value="weekdayWeekend">Weekday / weekend</option></select></label><label>Daily goal, oz<input id="dailyGoalInput" type="number" inputmode="numeric" min="1" max="400" /></label><label>Weekday goal, oz<input id="weekdayGoalInput" type="number" inputmode="numeric" min="1" max="400" /></label><label>Weekend goal, oz<input id="weekendGoalInput" type="number" inputmode="numeric" min="1" max="400" /></label><label>Theme<select id="themeInput"><option value="system">System</option><option value="light">Light</option><option value="dark">Dark</option></select></label><div class="privacy">🔒 Private/local-only: logs are saved on this device in browser storage. No account, no server database, no cloud sync, no Apple Health.<br><br><span id="versionText">Version</span></div><div class="actions"><button class="ghost" value="cancel" type="button" data-close-dialog="settingsDialog">Cancel</button><button class="primary" id="saveSettingsButton" value="default" type="submit">Save</button></div><div class="actions"><button class="ghost" id="editCupsButton" type="button">Edit Cups</button><button class="ghost" id="restoreTodayButton" type="button">Restore Today</button></div><div class="actions"><button class="ghost" id="resetTodayButton" type="button">Reset Today</button><button class="ghost danger" id="clearAllDataButton" type="button">Clear All Data</button></div><div class="actions"><button class="ghost" id="exportDataButton" type="button">Export</button><button class="ghost" id="importDataButton" type="button">Import</button></div></form></dialog>
   <dialog id="dayDialog"><form class="modal" method="dialog"><h2 id="dayTitle">Day</h2><div id="dayDetails" class="timeline show"></div><div class="actions"><button class="primary" value="default" type="button" data-close-dialog="dayDialog">Done</button></div></form></dialog>
   <div class="toast" id="toast" role="status" aria-live="polite"></div><div class="confetti" id="confetti" aria-hidden="true"></div>
-  <script src="config.js"></script><script src="storage.js"></script><script src="date.js"></script><script src="ui.js"></script><script src="telemetry.js"></script><script src="app.js"></script><script src="app-telemetry-v18.js"></script>
+  <script src="config.js"></script><script src="storage.js"></script><script src="date.js"></script><script src="ui.js"></script><script src="telemetry.js"></script><script src="app.js"></script><script src="app-telemetry-v18.js"></script><script src="progress-v22.js"></script><script src="achievements-v22.js"></script>
 </body>
 </html>
