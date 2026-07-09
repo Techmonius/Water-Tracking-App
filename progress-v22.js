@@ -1,0 +1,5 @@
+(function(){
+function wtStats(){let oz=0,drinks=0,goals=0;Object.keys(state.days||{}).forEach(k=>{let ds=state.days[k].drinks||[];let t=ds.reduce((a,d)=>a+Number(d.oz||0),0);oz+=t;drinks+=ds.length;if(t>=goalFor(k))goals++;});let st=streaks();return{oz,drinks,goals,best:st.best,level:Math.floor(oz/500)+1};}
+function wtRenderProgress(){let anchor=document.querySelector('.history')?.closest('.card');if(!anchor)return;let s=wtStats();let start=(s.level-1)*500,next=s.level*500,pct=Math.min(100,Math.round(((s.oz-start)/(next-start))*100));let html='<div class="row"><h2>Progress</h2><span class="avg">Level '+s.level+'</span></div><div class="levelbar"><div style="width:'+pct+'%"></div></div><p class="hint">'+s.oz+' lifetime oz · '+s.goals+' goal days · best streak '+s.best+'</p>';let card=document.getElementById('progressCard');if(!card){card=document.createElement('section');card.className='card';card.id='progressCard';anchor.parentNode.insertBefore(card,anchor);}card.innerHTML=html;}
+let old=window.render||render;window.render=function(){old();setTimeout(wtRenderProgress,0)};setTimeout(wtRenderProgress,250);
+})();
