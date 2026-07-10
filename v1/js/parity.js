@@ -11,6 +11,7 @@
     if($('goalModeLabel'))$('goalModeLabel').textContent=state.settings.goalMode==='weekdayWeekend'?'Split':'Daily';
     const undo=$('undoButton');if(undo){undo.disabled=!last;undo.textContent=last?'↶ Undo +'+last.oz+' oz':'↶ Undo last drink';}
     document.querySelectorAll('#cupButtons .cup').forEach(b=>b.classList.toggle('editmode',editCups));
+    renderCupEditPrompt();
   }
   function queueRefresh(){if(refreshQueued)return;refreshQueued=true;requestAnimationFrame(()=>{refreshQueued=false;refreshDetails();wireCustomButton();});}
 
@@ -30,14 +31,37 @@
 
   $('toggleTimelineButton').onclick=()=>{timelineOpen=!timelineOpen;$('timeline').classList.toggle('show',timelineOpen);$('toggleTimelineButton').textContent=timelineOpen?'Hide':'Show';};
 
-  $('editCupsButton').onclick=()=>{
-    editCups=!editCups;$('settingsDialog').close();refreshDetails();
-    toast(editCups?'Cup edit mode on. Tap a cup to edit it; open Settings > Edit Cups again to turn it off.':'Cup edit mode off',3800);
-  };
+  function cupsCard(){return document.getElementById('cupButtons')?.closest('.card');}
+  function renderCupEditPrompt(){
+    const card=cupsCard();if(!card)return;
+    let prompt=card.querySelector('.cupEditPrompt');
+    if(!editCups){prompt?.remove();return;}
+    if(!prompt){
+      prompt=document.createElement('div');prompt.className='cupEditPrompt';
+      prompt.innerHTML='<span>Choose a cup to edit</span><button type="button" class="small" id="cancelCupEdit">Cancel</button>';
+      card.insertBefore(prompt,document.getElementById('cupButtons'));
+      prompt.querySelector('#cancelCupEdit').onclick=endCupEdit;
+    }
+  }
+  function startCupEdit(){
+    editCups=true;
+    $('settingsDialog').close();
+    refreshDetails();
+    const card=cupsCard();
+    setTimeout(()=>card?.scrollIntoView({behavior:'smooth',block:'center'}),80);
+  }
+  function endCupEdit(){
+    if(!editCups)return;
+    editCups=false;
+    refreshDetails();
+  }
+  $('editCupsButton').onclick=startCupEdit;
   document.addEventListener('click',e=>{
     if(!editCups)return;const cup=e.target.closest('#cupButtons .cup');if(!cup)return;
     e.preventDefault();e.stopImmediatePropagation();cup.dispatchEvent(new MouseEvent('contextmenu',{bubbles:true,cancelable:true,view:window}));
   },true);
+  const cupDialog=$('cupDialog');
+  if(cupDialog){cupDialog.addEventListener('close',endCupEdit);cupDialog.addEventListener('cancel',endCupEdit);}
 
   function lock(){if(document.body.dataset.locked==='true')return;scrollY=window.scrollY||0;document.body.dataset.locked='true';Object.assign(document.body.style,{position:'fixed',top:'-'+scrollY+'px',left:'0',right:'0',width:'100%'});}
   function unlock(){setTimeout(()=>{if(document.querySelector('dialog[open]'))return;document.body.dataset.locked='false';Object.assign(document.body.style,{position:'',top:'',left:'',right:'',width:''});window.scrollTo(0,scrollY);},0);}
