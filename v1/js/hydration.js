@@ -8,6 +8,8 @@
 
     function commit(){window.WT_V1_STORAGE.save(state);onChange?.(state);return state;}
     function getState(){return state;}
+    function isFutureDay(key){return String(key)>D.dayKey();}
+    function assertEditableDay(key){if(isFutureDay(key))throw new Error('Future days cannot be edited.');}
     function goalFor(key=D.dayKey()){
       const s=state.settings;
       if(s.goalMode==='weekdayWeekend'){
@@ -24,10 +26,12 @@
     function drinksFor(key=D.dayKey()){return state.days[key]?.drinks||[];}
     function totalFor(key=D.dayKey()){return drinksFor(key).reduce((sum,d)=>sum+Number(d.oz||0),0);}
     function backupDay(key=D.dayKey()){
+      assertEditableDay(key);
       state.backups[key]=JSON.parse(JSON.stringify(ensureDay(key)));
       Object.keys(state.backups).sort().slice(0,-30).forEach(k=>delete state.backups[k]);
     }
     function addDrink(oz,label='Quick add',key=D.dayKey(),at=null){
+      assertEditableDay(key);
       const amount=Number(oz);
       if(!Number.isFinite(amount)||amount<1)throw new Error('Enter a valid ounce amount.');
       backupDay(key);
@@ -42,6 +46,7 @@
       backupDay();commit();return removed;
     }
     function deleteDrink(key,id){
+      assertEditableDay(key);
       const day=ensureDay(key);
       const before=day.drinks.length;
       backupDay(key);
@@ -49,8 +54,9 @@
       if(day.drinks.length===before)return false;
       commit();return true;
     }
-    function resetDay(key=D.dayKey()){backupDay(key);state.days[key]={drinks:[]};commit();}
+    function resetDay(key=D.dayKey()){assertEditableDay(key);backupDay(key);state.days[key]={drinks:[]};commit();}
     function restoreDay(key=D.dayKey()){
+      assertEditableDay(key);
       if(!state.backups[key])return false;
       state.days[key]=JSON.parse(JSON.stringify(state.backups[key]));commit();return true;
     }
@@ -65,7 +71,7 @@
     function saveSettings(settings){state.settings={...state.settings,...settings};commit();}
     function replaceState(next){state=window.WT_V1_STORAGE.normalize(next);commit();}
 
-    return {getState,goalFor,ensureDay,drinksFor,totalFor,addDrink,undoToday,deleteDrink,resetDay,restoreDay,saveCup,deleteCup,saveSettings,replaceState};
+    return {getState,goalFor,isFutureDay,ensureDay,drinksFor,totalFor,addDrink,undoToday,deleteDrink,resetDay,restoreDay,saveCup,deleteCup,saveSettings,replaceState};
   }
 
   window.WT_V1_HYDRATION={createApi};
