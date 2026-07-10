@@ -1,56 +1,39 @@
 (function(){
-  const D=window.WT_V1_DATE;
-  let state=window.WT_V1_STORAGE.load();
-  const api=window.WT_V1_HYDRATION.createApi(state,()=>render());
-
-  const $=id=>document.getElementById(id);
-  function esc(v){return String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
-
+  const D=window.WT_V1_DATE,S=window.WT_V1_STORAGE,E=window.WT_V1_ENGAGEMENT,T=window.WT_V1_TELEMETRY,C=window.WT_V1_CONFIG;
+  let state=S.load(),selectedDay=D.dayKey(),editingCup=null,lastTodayTotal=0;
+  const $=id=>document.getElementById(id),esc=v=>String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const api=window.WT_V1_HYDRATION.createApi(state,()=>{state=api.getState();render();});
+  function toast(msg,ms=2600){const el=$('toast');el.textContent=msg;el.classList.add('show');clearTimeout(el._t);el._t=setTimeout(()=>el.classList.remove('show'),ms);}
+  function applyTheme(){const t=state.settings.theme;document.body.classList.toggle('dark',t==='dark'||(t==='system'&&matchMedia('(prefers-color-scheme: dark)').matches));}
+  function celebrate(){const b=document.createElement('div');b.className='goalBurst';b.innerHTML='<div style="font-size:42px">🎉</div><h2>Goal reached!</h2><p>You watered your plant and kept your streak alive.</p>';document.body.appendChild(b);navigator.vibrate?.([30,40,30]);setTimeout(()=>b.remove(),3500);T.track('goal_celebration',{feature:'Engagement'});}
+  function plantSvg(p){const h=28+p.stage*7;let leaves='';for(let n=0;n<p.stage;n++){const y=98-h+n*7,x=n%2?68:52,r=n%2?24:-24;leaves+='<ellipse class="leaf" cx="'+x+'" cy="'+y+'" rx="15" ry="7" fill="#37b86a" transform="rotate('+r+' '+x+' '+y+')"/>';};const flower=p.stage>=7?'<circle cx="60" cy="'+(90-h)+'" r="8" fill="#ffcae6"/><circle cx="60" cy="'+(90-h)+'" r="3" fill="#f7a600"/>':'';const fruit=p.stage>=9?'<circle cx="72" cy="55" r="5" fill="#ff6b6b"/>':'';return'<svg class="'+(p.dry?'dry':'')+'" viewBox="0 0 120 130"><ellipse cx="60" cy="116" rx="36" ry="10" fill="#8b5e34"/><path d="M35 104h50l-8 22H43z" fill="#c97b3a"/><path d="M60 106 C60 '+(106-h/2)+' 60 '+(103-h)+' 60 '+(96-h)+'" stroke="#2f9e55" stroke-width="7" fill="none" stroke-linecap="round"/>'+leaves+flower+fruit+'</svg>';}
   function render(){
-    const today=D.dayKey();
-    const total=api.totalFor(today),goal=api.goalFor(today),pct=Math.min(100,Math.round(total/goal*100));
-    $('todayTotal').textContent=total;
-    $('todayGoal').textContent=goal;
-    $('progressFill').style.width=pct+'%';
-    $('progressText').textContent=Math.round(total/goal*100)+'% complete';
-    renderQuick();renderCups();renderHistory();renderTimeline();renderStats();
+    state=api.getState();applyTheme();const today=D.dayKey(),total=api.totalFor(today),goal=api.goalFor(today),pct=goal?Math.round(total/goal*100):0;
+    $('todayTotal').textContent=total;$('todayGoal').textContent=goal;$('progressFill').style.width=Math.min(100,pct)+'%';$('progressText').textContent=pct+'% complete';
+    renderQuick();renderCups();renderTimeline();renderHistory();renderMonth();renderStats();renderEngagement();renderPlant();
+    const earned=E.evaluate(api);earned.forEach((a,i)=>setTimeout(()=>toast(a.icon+' '+(a.type==='daily'?'Daily win':'Achievement')+': '+a.name,3200),i*500));
+    if(lastTodayTotal<goal&&total>=goal&&!state.engagement.celebrations.goalByDate[today]){state.engagement.celebrations.goalByDate[today]=Date.now();S.save(state);celebrate();}
+    lastTodayTotal=total;
   }
-
-  function renderQuick(){
-    $('quickButtons').innerHTML='';
-    [8,12,16,20,30].forEach(oz=>{
-      const b=document.createElement('button');b.className='quick';b.textContent='+'+oz+' oz';b.onclick=()=>add(oz,'Quick add');$('quickButtons').appendChild(b);
-    });
-    const custom=document.createElement('button');custom.className='quick';custom.textContent='+ Custom';custom.onclick=()=>{const oz=Number(prompt('Ounces:'));if(oz)add(oz,'Custom amount');};$('quickButtons').appendChild(custom);
-  }
-
-  function renderCups(){
-    $('cupButtons').innerHTML='';
-    api.getState().cups.forEach(c=>{const b=document.createElement('button');b.className='cup';b.innerHTML='+'+esc(c.oz)+' oz<br><small>'+esc(c.name)+'</small>';b.onclick=()=>add(c.oz,c.name);$('cupButtons').appendChild(b);});
-  }
-
-  function renderHistory(){
-    $('history').innerHTML='';
-    for(let i=6;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);const k=D.dayKey(d),oz=api.totalFor(k),g=api.goalFor(k);const x=document.createElement('div');x.className='day'+(oz>=g?' met':'');x.innerHTML='<strong>'+d.toLocaleDateString([], {weekday:'short'})+'</strong><br>'+oz+' oz';$('history').appendChild(x);}
-  }
-
-  function renderTimeline(){
-    const list=[...api.drinksFor()].reverse();$('timeline').innerHTML=list.length?'':'<div class="drink">No drinks yet</div>';
-    list.forEach(d=>{const r=document.createElement('div');r.className='drink';r.innerHTML='<span>'+D.formatTime(d.at)+' · '+esc(d.label)+'</span><strong>+'+esc(d.oz)+' oz</strong>';$('timeline').appendChild(r);});
-  }
-
-  function renderStats(){
-    const s=window.WT_V1_STATS.calculate(api);
-    const rows=[['Lifetime',Math.round(s.lifetimeOz)+' oz'],['Gallons',s.lifetimeGallons.toFixed(1)],['Days tracked',s.daysTracked],['Goal completion',Math.round(s.completionRate)+'%'],['Current streak',s.currentStreak],['Best streak',s.bestStreak],['Average/day',Math.round(s.averageDailyOz)+' oz'],['Average first drink',s.averageFirstDrinkTime],['Level',s.level],['Level progress',s.levelProgress+' / 500']];
-    $('stats').innerHTML=rows.map(r=>'<div class="stat"><div class="muted">'+r[0]+'</div><strong>'+r[1]+'</strong></div>').join('');
-  }
-
-  function add(oz,label){try{api.addDrink(oz,label);navigator.vibrate?.(20);}catch(e){alert(e.message);}}
-
-  $('undoButton').onclick=()=>api.undoToday();
-  $('resetButton').onclick=()=>{if(confirm('Reset today?'))api.resetDay();};
-  $('clearButton').onclick=()=>{if(confirm('Reset all Water Tracker data, including badges and plant progress?')){window.WT_V1_STORAGE.resetUserData();location.reload();}};
-  $('exportButton').onclick=()=>window.WT_V1_STORAGE.exportData(api.getState());
-  $('goalButton').onclick=()=>{const n=Number(prompt('Daily goal:',api.getState().settings.dailyGoal));if(n>0)api.saveSettings({dailyGoal:n});};
-  render();
+  function renderQuick(){const box=$('quickButtons');box.innerHTML='';[8,12,16,20,30].forEach(oz=>{const b=document.createElement('button');b.className='quick';b.textContent='+'+oz+' oz';b.onclick=()=>add(oz,'Quick add');box.appendChild(b);});}
+  function renderCups(){const box=$('cupButtons');box.innerHTML='';state.cups.forEach(c=>{const b=document.createElement('button');b.className='cup';b.innerHTML='+'+esc(c.oz)+' oz<br><small>'+esc(c.name)+'</small>';b.onclick=()=>add(c.oz,c.name);b.oncontextmenu=e=>{e.preventDefault();openCup(c.id);};box.appendChild(b);});}
+  function renderTimeline(){const box=$('timeline'),list=[...api.drinksFor()].reverse();box.innerHTML=list.length?'':'<div class="drink">No drinks yet</div>';list.forEach(d=>{const r=document.createElement('div');r.className='drink';r.innerHTML='<span>'+D.formatTime(d.at)+' · '+esc(d.label)+'</span><strong>+'+esc(d.oz)+' oz</strong>';box.appendChild(r);});}
+  function renderHistory(){const box=$('history');box.innerHTML='';let sum=0;for(let i=6;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);const k=D.dayKey(d),oz=api.totalFor(k),g=api.goalFor(k);sum+=oz;const b=document.createElement('button');b.className='day '+(oz>=g?'met':oz?'partial':'')+(k===D.dayKey()?' today':'');b.innerHTML='<strong>'+d.toLocaleDateString([], {weekday:'short'})+'</strong><br>'+oz+' oz';b.onclick=()=>openDay(k);box.appendChild(b);}$('weeklyAverage').textContent='Avg '+Math.round(sum/7)+' oz';}
+  function renderMonth(){const box=$('monthGrid'),now=new Date(),y=now.getFullYear(),m=now.getMonth(),first=new Date(y,m,1),last=new Date(y,m+1,0);box.innerHTML='';for(let i=0;i<first.getDay();i++)box.appendChild(document.createElement('div'));for(let n=1;n<=last.getDate();n++){const d=new Date(y,m,n),k=D.dayKey(d),oz=api.totalFor(k),g=api.goalFor(k),b=document.createElement('button');b.className='monthCell '+(oz>=g?'met':oz?'partial':'')+(k===D.dayKey()?' today':'');b.textContent=n;b.onclick=()=>openDay(k);box.appendChild(b);}}
+  function renderStats(){const s=window.WT_V1_STATS.calculate(api),rows=[['Lifetime',Math.round(s.lifetimeOz)+' oz'],['Gallons',s.lifetimeGallons.toFixed(1)],['Days tracked',s.daysTracked],['Goal days',s.goalDays],['Goal completion',Math.round(s.completionRate)+'%'],['Current streak',s.currentStreak],['Best streak',s.bestStreak],['Average/day',Math.round(s.averageDailyOz)+' oz'],['Average first drink',s.averageFirstDrinkTime],['Average goal time',s.averageGoalTime],['Favorite cup',s.favoriteLabel||'—'],['Most common hour',s.mostCommonHour||'—']];$('stats').innerHTML=rows.map(r=>'<div class="stat"><div class="muted">'+r[0]+'</div><strong>'+r[1]+'</strong></div>').join('');}
+  function renderEngagement(){const lvl=E.level(api);$('levelText').textContent='Level '+lvl.level;$('levelFill').style.width=Math.round(lvl.progress/lvl.next*100)+'%';$('todayWins').innerHTML=E.todayWins(api).map(w=>'<div class="winRow '+(w.earned?'done':'')+'"><span>'+w.icon+' '+w.name+'</span><strong>×'+w.count+'</strong></div>').join('');$('badgeList').innerHTML=E.allBadges(api).map(b=>'<div class="badgeRow"><span>'+b.icon+' <strong>'+b.name+'</strong><br><small class="muted">'+b.type+' · '+b.description+'</small></span><span class="badgeCount">×'+b.count+'</span></div>').join('');}
+  function renderPlant(){const p=E.plant(api);$('plantName').textContent=p.name;$('plantBox').innerHTML='<div>'+plantSvg(p)+'</div><div><p>'+(p.dry?'Soil is dry. Log a drink to perk it up.':'Looking hydrated and happy.')+'</p><p class="muted">'+p.goalDays+' goal days · next growth at '+p.nextGoalDays+'</p></div>';}
+  function add(oz,label,key=D.dayKey()){const before=api.totalFor(key);try{const r=api.addDrink(oz,label,key);navigator.vibrate?.(20);toast('Added '+oz+' oz');T.track('drink_logged',{feature:'Logging',amountOz:Number(oz),mode:key===D.dayKey()?'today':'previous_day'});if(key!==D.dayKey())openDay(key);return{before,after:r.total};}catch(e){alert(e.message);}}
+  function openDay(key){selectedDay=key;const d=D.dateFromKey(key);$('dayTitle').textContent=d.toLocaleDateString([], {weekday:'long',month:'short',day:'numeric'})+' · '+api.totalFor(key)+'/'+api.goalFor(key)+' oz';const box=$('dayList'),list=[...api.drinksFor(key)].reverse();box.innerHTML=list.length?'':'<div class="drink">No drinks logged</div>';list.forEach(x=>{const r=document.createElement('div');r.className='drink';r.innerHTML='<span>'+D.formatTime(x.at)+' · '+esc(x.label)+'</span><span><strong>+'+x.oz+' oz</strong> <button class="danger" data-id="'+x.id+'">Delete</button></span>';box.appendChild(r);});box.querySelectorAll('[data-id]').forEach(b=>b.onclick=()=>{if(confirm('Delete this drink?'))api.deleteDrink(key,b.dataset.id);openDay(key);});$('dayDialog').showModal();}
+  function openCup(id=null){editingCup=id;const c=state.cups.find(x=>x.id===id);$('cupTitle').textContent=c?'Edit Cup':'Add Cup';$('cupName').value=c?.name||'';$('cupOz').value=c?.oz||'';$('deleteCup').hidden=!c;$('cupDialog').showModal();}
+  function openSettings(){$('goalMode').value=state.settings.goalMode;$('dailyGoal').value=state.settings.dailyGoal;$('weekdayGoal').value=state.settings.weekdayGoal;$('weekendGoal').value=state.settings.weekendGoal;$('theme').value=state.settings.theme;$('versionText').textContent='Version '+C.appVersion+' · schema '+C.schemaVersion;$('settingsDialog').showModal();}
+  function importFile(){const i=document.createElement('input');i.type='file';i.accept='application/json';i.onchange=()=>{const f=i.files?.[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{const next=S.importData(r.result);api.replaceState(next);toast('Data imported');}catch(e){alert(e.message);}};r.readAsText(f);};i.click();}
+  $('customButton').onclick=()=>{const n=Number(prompt('Ounces:'));if(n)add(n,'Custom amount');};$('undoButton').onclick=()=>{const x=api.undoToday();toast(x?'Undid '+x.oz+' oz':'Nothing to undo');T.track('undo_used',{feature:'Correction'});};$('resetButton').onclick=()=>{if(confirm('Reset today to 0 oz?'))api.resetDay();};$('restoreButton').onclick=()=>toast(api.restoreDay()?'Today restored':'No backup for today');$('addCupButton').onclick=()=>openCup();$('settingsButton').onclick=openSettings;$('badgesButton').onclick=()=>document.querySelector('[data-view="badgesView"]').click();
+  $('saveCup').onclick=()=>{try{api.saveCup({id:editingCup,name:$('cupName').value,oz:$('cupOz').value});$('cupDialog').close();toast('Cup saved');}catch(e){alert(e.message);}};$('deleteCup').onclick=()=>{if(editingCup&&confirm('Delete this cup?')){api.deleteCup(editingCup);$('cupDialog').close();}};
+  $('saveSettings').onclick=()=>{api.saveSettings({goalMode:$('goalMode').value,dailyGoal:Number($('dailyGoal').value),weekdayGoal:Number($('weekdayGoal').value),weekendGoal:Number($('weekendGoal').value),theme:$('theme').value});$('settingsDialog').close();toast('Settings saved');};$('exportButton').onclick=()=>S.exportData(state);$('importButton').onclick=importFile;
+  $('clearButton').onclick=()=>{if(confirm('Reset Water Tracker? This permanently erases hydration history, plant progress, achievements, badge counts, cups, and settings.'))if(confirm('This cannot be undone unless you exported a backup. Continue?')){S.resetUserData();location.reload();}};
+  $('addPastDrink').onclick=()=>{const n=Number(prompt('Ounces to add:'));if(n)add(n,'Manual edit',selectedDay);};$('resetPastDay').onclick=()=>{if(confirm('Reset this day?')){api.resetDay(selectedDay);openDay(selectedDay);}};
+  $('developerButton').onclick=()=>{const info=[['Version',C.appVersion],['Schema',C.schemaVersion],['Install ID',T.installId().slice(0,8)],['Stored days',Object.keys(state.days).length],['Permanent badges',Object.keys(state.engagement.permanent).length],['Daily wins',Object.values(state.engagement.daily.counts).reduce((a,b)=>a+b,0)],['Storage key',C.storageKey]];$('devInfo').innerHTML=info.map(x=>'<div class="badgeRow"><span>'+x[0]+'</span><strong>'+x[1]+'</strong></div>').join('');$('devDialog').showModal();T.track('developer_info_opened',{feature:'Developer'});};
+  document.querySelectorAll('[data-view]').forEach(b=>b.onclick=()=>{document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));$(b.dataset.view).classList.add('active');window.scrollTo(0,0);});
+  matchMedia('(prefers-color-scheme: dark)').addEventListener('change',applyTheme);applyTheme();lastTodayTotal=api.totalFor();render();T.track('app_opened',{feature:'General',mode:matchMedia('(display-mode: standalone)').matches?'Home Screen':'Browser'});
 })();
