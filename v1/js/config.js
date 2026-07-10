@@ -1,5 +1,5 @@
 window.WT_V1_CONFIG = Object.freeze({
-  appVersion: '1.2.1',
+  appVersion: '1.2.2',
   schemaVersion: 2,
   storageKey: 'waterTracker_v2',
   legacyKeys: Object.freeze({
@@ -12,10 +12,3 @@ window.WT_V1_CONFIG = Object.freeze({
   defaultGoal: 120,
   defaultWeekendGoal: 100
 });
-
-if (!document.getElementById('customButton')) {
-  const compatibilityButton = document.createElement('button');
-  compatibilityButton.id = 'customButton';
-  compatibilityButton.hidden = true;
-  document.body.appendChild(compatibilityButton);
-}
