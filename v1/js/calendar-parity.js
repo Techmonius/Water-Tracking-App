@@ -7,32 +7,26 @@
     const A=api(),today=D.dayKey();
     const history=document.getElementById('history');
     if(history){
-      history.innerHTML='';let sum=0;
+      const cells=[...history.querySelectorAll('.day')];let sum=0;
       for(let i=6;i>=0;i--){
-        const d=new Date();d.setDate(d.getDate()-i);
+        const index=6-i,d=new Date();d.setDate(d.getDate()-i);
         const key=D.dayKey(d),oz=A.totalFor(key),goal=A.goalFor(key),pct=goal?Math.round(oz/goal*100):0;
         sum+=oz;
-        const b=document.createElement('button');
-        b.type='button';
+        const b=cells[index];if(!b)continue;
         b.className='day'+(oz>=goal?' met':pct>=80?' close':'')+(key===today?' today':'');
         b.innerHTML='<div><div class="dow">'+d.toLocaleDateString(undefined,{weekday:'short'})+'</div><div class="oz">'+oz+'</div><div class="pct">'+pct+'%</div></div>';
-        b.onclick=()=>{const existing=[...document.querySelectorAll('#monthGrid .monthCell')].find(x=>x.dataset.key===key);if(existing)existing.click();else window.dispatchEvent(new CustomEvent('wt-open-day',{detail:{key}}));};
-        history.appendChild(b);
       }
       const avg=document.getElementById('weeklyAverage');if(avg)avg.textContent='Avg '+Math.round(sum/7)+' oz';
     }
     const month=document.getElementById('monthGrid');
     if(month){
       const now=new Date(),year=now.getFullYear(),m=now.getMonth(),first=new Date(year,m,1),last=new Date(year,m+1,0);
-      month.innerHTML='';
-      for(let i=0;i<first.getDay();i++)month.appendChild(document.createElement('div'));
+      const buttons=[...month.querySelectorAll('.monthCell')];
       for(let n=1;n<=last.getDate();n++){
-        const d=new Date(year,m,n),key=D.dayKey(d),oz=A.totalFor(key),goal=A.goalFor(key);
-        const b=document.createElement('button');b.type='button';b.dataset.key=key;
+        const d=new Date(year,m,n),key=D.dayKey(d),oz=A.totalFor(key),goal=A.goalFor(key),b=buttons[n-1];if(!b)continue;
         b.className='monthCell'+(oz>=goal?' met':oz>0?' partial':'')+(key===today?' today':'');
         b.innerHTML='<span class="monthDay">'+n+'</span>';
         b.setAttribute('aria-label',d.toLocaleDateString()+' '+oz+' ounces');
-        month.appendChild(b);
       }
     }
     painting=false;
