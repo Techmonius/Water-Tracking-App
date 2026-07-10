@@ -1,25 +1,49 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover"><meta name="theme-color" content="#eaf7ff"><title>Water Tracker v1</title><link rel="stylesheet" href="v1/css/app.css"><link rel="stylesheet" href="v1/css/refinements.css"></head>
-<body><main class="app">
-<header class="top"><div><p class="tiny">Today</p><h1>Water Tracker</h1></div><button id="settingsButton" class="gear">⚙️</button></header>
-<section id="homeView" class="view active">
-<section id="hero" class="hero"><div class="total"><span id="todayTotal" class="num">0</span><span class="goal">/ <span id="todayGoal">120</span> oz</span></div><div id="progressText" class="status">0% complete</div><div class="bottleArea"><div class="bottle"><div class="mark"></div><div id="water" class="water"></div><div class="shine"></div></div></div><div id="quickButtons" class="grid"></div></section>
-<section class="card"><div class="row"><h2>My Cups</h2><button id="addCupButton" class="small">+ Add Cup</button></div><div id="cupButtons" class="cups"></div><p class="hint">Tap a cup to log it. Press and hold a cup to edit it.</p></section>
-<button id="undoButton" class="undo">↶ Undo last drink</button>
-<div class="utilityActions"><button id="resetButton" class="ghost danger">Reset Today</button><button id="restoreButton" class="ghost">Restore Today</button></div>
-<section class="card"><div class="row"><h2>Your Plant</h2><span id="plantName" class="avg">Seed</span></div><div id="plantBox" class="plant"></div></section>
-<section class="card"><div class="row"><h2>Progress</h2><span id="levelText" class="avg">Level 1</span></div><div class="levelbar"><div id="levelFill"></div></div><div id="todayWins" class="wins"></div><button id="badgesButton" class="small">All Badges</button></section>
-<section class="card"><div class="row"><h2>Last 7 Days</h2><span id="weeklyAverage" class="avg"></span></div><div id="history" class="history"></div></section>
-<section class="card"><div class="row"><h2>This Month</h2><span class="avg">Tap a day to edit</span></div><div id="monthWeekdays" class="monthWeekdays"><span>S</span><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span></div><div id="monthGrid" class="monthGrid"></div></section>
-<section class="card"><div class="row"><h2>Today’s Drinks</h2><button id="customButton" class="small">+ Custom</button></div><div id="timeline" class="timeline show"></div></section>
-<div class="pageLinks"><button data-view="statsView" class="small">Statistics</button><button data-view="badgesView" class="small">Achievements</button></div>
-</section>
-<section id="statsView" class="view"><section class="card"><div class="row"><h2>Statistics</h2><button data-view="homeView" class="small">Done</button></div><div id="stats" class="statsGrid"></div></section></section>
-<section id="badgesView" class="view"><section class="card"><div class="row"><h2>Achievements</h2><button data-view="homeView" class="small">Done</button></div><div id="badgeList" class="list"></div></section></section>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,minimum-scale=1,user-scalable=no,viewport-fit=cover">
+  <meta name="theme-color" content="#eaf7ff">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Water">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <title>Water Tracker</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icon.svg">
+  <link rel="stylesheet" href="v1/css/app.css">
+  <link rel="stylesheet" href="v1/css/refinements.css">
+  <link rel="stylesheet" href="v1/css/parity.css">
+</head>
+<body>
+<main class="app">
+  <section class="update" id="updateBanner" hidden><span>🚀 New version available</span><button id="updateNow" type="button">Update</button></section>
+  <header class="top"><div><p class="tiny">Today</p><h1>Water Tracker</h1></div><button id="settingsButton" class="gear" aria-label="Settings">⚙️</button></header>
+  <section id="homeView" class="view active">
+    <section id="hero" class="hero">
+      <div class="total"><span id="todayTotal" class="num">0</span><span class="goal">/ <span id="todayGoal">120</span> oz</span></div>
+      <div id="progressText" class="status">0% complete</div>
+      <div class="heroStats"><span class="pill">🔥 Streak <strong id="currentStreak">0</strong></span><span class="pill">🏆 Best <strong id="bestStreak">0</strong></span><span class="pill">🎯 Goal <strong id="goalModeLabel">Daily</strong></span></div>
+      <div class="bottleArea"><div class="bottle" aria-hidden="true"><div class="mark"></div><div id="water" class="water"></div><div class="shine"></div></div></div>
+      <div id="quickButtons" class="grid"></div>
+    </section>
+    <section class="card"><div class="row"><h2>My Cups</h2><button id="addCupButton" class="small">+ Add Cup</button></div><div id="cupButtons" class="cups"></div><p class="hint">Tap a cup to log it. Use Edit Cups in Settings to rename, resize, or delete.</p></section>
+    <button id="undoButton" class="undo" disabled>↶ Undo last drink</button>
+    <section class="card"><div class="row"><h2>Your Plant</h2><span id="plantName" class="avg">Seed</span></div><div id="plantBox" class="plant"></div></section>
+    <section class="card"><div class="row"><h2>Progress</h2><span id="levelText" class="avg">Level 1</span></div><div class="levelbar"><div id="levelFill"></div></div><div id="todayWins" class="wins"></div><button id="badgesButton" class="small">All Badges</button></section>
+    <section class="card"><div class="row"><h2>Last 7 Days</h2><span id="weeklyAverage" class="avg">Avg 0 oz</span></div><div id="history" class="history"></div><p class="hint">Tap a day to see or edit that day’s drinks.</p></section>
+    <section class="card"><div class="row"><h2>This Month</h2><span class="avg">Tap a day to edit</span></div><div id="monthWeekdays" class="monthWeekdays"><span>S</span><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span></div><div id="monthGrid" class="monthGrid"></div></section>
+    <section class="card"><div class="row"><h2>Today’s Drinks</h2><button id="toggleTimelineButton" class="small">Show</button></div><div id="timeline" class="timeline"></div></section>
+    <div class="pageLinks"><button data-view="statsView" class="small">Statistics</button><button data-view="badgesView" class="small">Achievements</button></div>
+  </section>
+  <section id="statsView" class="view"><section class="card"><div class="row"><h2>Statistics</h2><button data-view="homeView" class="small">Done</button></div><div id="stats" class="statsGrid"></div></section></section>
+  <section id="badgesView" class="view"><section class="card"><div class="row"><h2>Achievements</h2><button data-view="homeView" class="small">Done</button></div><div id="badgeList" class="list"></div></section></section>
 </main>
-<dialog id="settingsDialog"><form class="modal" method="dialog"><div class="row"><h2>Settings</h2><button class="small" value="cancel">Done</button></div><label>Goal mode<select id="goalMode"><option value="daily">Same every day</option><option value="weekdayWeekend">Weekday / weekend</option></select></label><label>Daily goal<input id="dailyGoal" type="number"></label><label>Weekday goal<input id="weekdayGoal" type="number"></label><label>Weekend goal<input id="weekendGoal" type="number"></label><label>Theme<select id="theme"><option value="system">System</option><option value="light">Light</option><option value="dark">Dark</option></select></label><div class="actions"><button id="saveSettings" class="primary" type="button">Save</button><button id="exportButton" class="ghost" type="button">Export</button><button id="importButton" class="ghost" type="button">Import</button></div><div class="actions"><button id="developerButton" class="ghost" type="button">Developer Info</button><button id="clearButton" class="ghost danger" type="button">Clear All Data</button></div><div class="privacy"><span id="versionText"></span></div></form></dialog>
-<dialog id="cupDialog"><form class="modal" method="dialog"><h2 id="cupTitle">Add Cup</h2><label>Name<input id="cupName"></label><label>Ounces<input id="cupOz" type="number"></label><div class="actions"><button id="saveCup" class="primary" type="button">Save</button><button id="deleteCup" class="ghost danger" type="button">Delete</button><button class="ghost" value="cancel">Cancel</button></div></form></dialog>
+<dialog id="amountDialog"><form class="modal" method="dialog"><h2>Add custom amount</h2><label>Ounces<input id="amountInput" type="number" inputmode="decimal" min="0" step="0.5" placeholder="24"></label><div class="actions"><button class="ghost" value="cancel">Cancel</button><button class="primary" id="saveAmountButton" type="button">Add</button></div></form></dialog>
+<dialog id="settingsDialog"><form class="modal" method="dialog"><div class="row"><h2>Settings</h2><button class="small" value="cancel">Done</button></div><label>Goal mode<select id="goalMode"><option value="daily">Same every day</option><option value="weekdayWeekend">Weekday / weekend</option></select></label><label>Daily goal, oz<input id="dailyGoal" type="number" inputmode="numeric" min="1" max="400"></label><label>Weekday goal, oz<input id="weekdayGoal" type="number" inputmode="numeric" min="1" max="400"></label><label>Weekend goal, oz<input id="weekendGoal" type="number" inputmode="numeric" min="1" max="400"></label><label>Theme<select id="theme"><option value="system">System</option><option value="light">Light</option><option value="dark">Dark</option></select></label><div class="privacy">🔒 Private/local-only: logs are saved on this device in browser storage. No account, no server database, no cloud sync, no Apple Health.<br><br><span id="versionText"></span></div><div class="actions"><button id="saveSettings" class="primary" type="button">Save</button><button id="editCupsButton" class="ghost" type="button">Edit Cups</button></div><div class="actions"><button id="restoreButton" class="ghost" type="button">Restore Today</button><button id="resetButton" class="ghost danger" type="button">Reset Today</button></div><div class="actions"><button id="exportButton" class="ghost" type="button">Export</button><button id="importButton" class="ghost" type="button">Import</button></div><div class="actions"><button id="developerButton" class="ghost" type="button">Developer Info</button><button id="clearButton" class="ghost danger" type="button">Clear All Data</button></div></form></dialog>
+<dialog id="cupDialog"><form class="modal" method="dialog"><h2 id="cupTitle">Add Cup</h2><label>Name<input id="cupName" maxlength="18" placeholder="Owala"></label><label>Ounces<input id="cupOz" type="number" inputmode="decimal" min="0" step="0.5" placeholder="24"></label><div class="actions"><button id="saveCup" class="primary" type="button">Save</button><button id="deleteCup" class="ghost danger" type="button">Delete</button><button class="ghost" value="cancel">Cancel</button></div></form></dialog>
 <dialog id="dayDialog"><form class="modal" method="dialog"><div class="row"><h2 id="dayTitle">Day</h2><button class="small" value="cancel">Done</button></div><div class="actions"><button id="addPastDrink" class="primary" type="button">+ Drink</button><button id="resetPastDay" class="ghost danger" type="button">Reset Day</button></div><div id="dayList" class="timeline show"></div></form></dialog>
 <dialog id="devDialog"><form class="modal" method="dialog"><div class="row"><h2>Developer Info</h2><button class="small" value="cancel">Done</button></div><div id="devInfo" class="list"></div></form></dialog>
-<div id="toast" class="toast"></div><div id="confetti" class="confetti"></div>
-<script src="v1/js/config.js"></script><script src="v1/js/storage.js"></script><script src="v1/js/date.js"></script><script src="v1/js/hydration.js"></script><script src="v1/js/stats.js"></script><script src="v1/js/engagement.js"></script><script src="v1/js/telemetry.js"></script><script src="v1/js/app.js"></script></body></html>
+<div id="toast" class="toast" role="status" aria-live="polite"></div><div id="confetti" class="confetti" aria-hidden="true"></div>
+<script src="v1/js/config.js"></script><script src="v1/js/storage.js"></script><script src="v1/js/date.js"></script><script src="v1/js/hydration.js"></script><script src="v1/js/stats.js"></script><script src="v1/js/engagement.js"></script><script src="v1/js/telemetry.js"></script><script src="v1/js/app.js"></script><script src="v1/js/parity.js"></script>
+</body></html>
