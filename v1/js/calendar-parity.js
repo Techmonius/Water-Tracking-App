@@ -24,9 +24,13 @@
       const buttons=[...month.querySelectorAll('.monthCell')];
       for(let n=1;n<=last.getDate();n++){
         const d=new Date(year,m,n),key=D.dayKey(d),oz=A.totalFor(key),goal=A.goalFor(key),b=buttons[n-1];if(!b)continue;
-        b.className='monthCell'+(oz>=goal?' met':oz>0?' partial':'')+(key===today?' today':'');
+        const future=key>today;
+        b.className='monthCell'+(oz>=goal?' met':oz>0?' partial':'')+(key===today?' today':'')+(future?' future':'');
         b.innerHTML='<span class="monthDay">'+n+'</span>';
-        b.setAttribute('aria-label',d.toLocaleDateString()+' '+oz+' ounces');
+        b.setAttribute('aria-label',future?d.toLocaleDateString()+' future date, editing unavailable':d.toLocaleDateString()+' '+oz+' ounces');
+        b.disabled=future;
+        b.setAttribute('aria-disabled',future?'true':'false');
+        b.tabIndex=future?-1:0;
       }
     }
     painting=false;
