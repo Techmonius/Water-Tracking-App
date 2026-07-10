@@ -9,7 +9,7 @@
     const levelText=document.getElementById('levelText');if(levelText)levelText.textContent='Level '+level.level;
     const levelFill=document.getElementById('levelFill');if(levelFill)levelFill.style.width=Math.round(level.progress/level.next*100)+'%';
     const box=document.getElementById('todayWins');
-    if(box)box.innerHTML=wins.map(w=>'<div class="winChip '+(w.earned?'done':'')+'">'+w.icon+' '+w.name+'</div>').join('');
+    if(box)box.innerHTML=wins.map(w=>'<div class="winBadge '+(w.earned?'earned':'locked')+'"><span class="winBadgeIcon">'+w.icon+'</span><span class="winBadgeName">'+w.name+'</span><span class="winBadgeState">'+(w.earned?'✓ Earned':'Not yet')+'</span></div>').join('');
     painting=false;
   }
   function queue(){if(queued)return;queued=true;requestAnimationFrame(()=>{queued=false;render();});}
