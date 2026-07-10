@@ -16,6 +16,16 @@
     {id:'halfway',icon:'☀️',name:'Halfway Before 2 PM',test:c=>c.total>=c.goal*.5&&c.nowHour<14},
     {id:'dailyGoal',icon:'🎯',name:'Daily Goal',test:c=>c.total>=c.goal}
   ];
+  const PLANT_STAGES=[
+    {name:'Seed',minGoalDays:0},
+    {name:'Sprout',minGoalDays:3},
+    {name:'Two Leaves',minGoalDays:6},
+    {name:'Leafy Plant',minGoalDays:10},
+    {name:'Bud',minGoalDays:15},
+    {name:'First Flower',minGoalDays:21},
+    {name:'More Flowers',minGoalDays:30},
+    {name:'Full Bloom',minGoalDays:45}
+  ];
   function hour(at){const d=new Date(at);return Number.isNaN(d.getTime())?99:d.getHours();}
   function scan(api){
     const state=api.getState();let lifetimeOz=0,totalDrinks=0,goalDays=0,earlyLogs=0,manualEdits=0;
@@ -37,12 +47,13 @@
   function todayWins(api){const got=api.getState().engagement.daily.earnedByDate[D.dayKey()]||{};return DAILY.map(a=>({...a,earned:Boolean(got[a.id]),count:api.getState().engagement.daily.counts[a.id]||0}));}
   function level(api){const oz=window.WT_V1_STATS.calculate(api).lifetimeOz;return{level:Math.floor(oz/500)+1,progress:oz%500,next:500};}
   function plant(api){
-    const s=window.WT_V1_STATS.calculate(api),stage=Math.min(9,Math.floor(s.goalDays/3));
-    const names=['Seed','Sprout','Two Leaves','Little Plant','Leafy Plant','Potted Plant','Big Plant','Flowering Plant','Young Tree','Fruit Tree'];
+    const stats=window.WT_V1_STATS.calculate(api),goalDays=stats.goalDays;
+    let stage=0;for(let i=0;i<PLANT_STAGES.length;i++)if(goalDays>=PLANT_STAGES[i].minGoalDays)stage=i;
     const today=api.totalFor(),goal=api.goalFor(),ratio=goal?today/goal:0;
-    const moisture=ratio<=0?'dry':ratio<.35?'damp':ratio<1?'moist':'watered';
-    const moistureText=moisture==='dry'?'Soil is dry. Add a drink to water it.':moisture==='damp'?'The soil is damp and the plant is perking up.':moisture==='moist'?'The soil is moist and the plant looks happy.':'Fully watered today — great job!';
-    return{stage,name:names[stage],goalDays:s.goalDays,nextGoalDays:(stage+1)*3,dry:moisture==='dry',moisture,moistureText,today,goal,ratio};
+    const moisture=ratio<=0?'dry':ratio<.4?'damp':ratio<1?'moist':'watered';
+    const moistureText=moisture==='dry'?'Dry soil — log a drink to perk it up.':moisture==='damp'?'Damp soil — the plant is perking up.':moisture==='moist'?'Moist soil — healthy and happy.':'Fully watered today — great job!';
+    const next=PLANT_STAGES[stage+1];
+    return{stage,name:PLANT_STAGES[stage].name,goalDays,nextGoalDays:next?next.minGoalDays:null,moisture,moistureText,today,goal,ratio};
   }
-  window.WT_V1_ENGAGEMENT={PERMANENT,DAILY,evaluate,allBadges,todayWins,level,plant};
+  window.WT_V1_ENGAGEMENT={PERMANENT,DAILY,PLANT_STAGES,evaluate,allBadges,todayWins,level,plant};
 })();
