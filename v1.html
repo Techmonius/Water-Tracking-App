@@ -1,66 +1,24 @@
 <!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover" />
-  <meta name="theme-color" content="#eef8ff" />
-  <title>Water Tracker v1 Test</title>
-  <link rel="stylesheet" href="v1/css/app.css" />
-</head>
-<body>
-  <main class="app">
-    <div class="notice"><strong>Private v1 test build.</strong> The normal app still points to v26. Existing local data is copied into the new unified v2 store on first load.</div>
-
-    <header class="top">
-      <div><div class="muted">Cohesive rebuild</div><h1>Water Tracker</h1></div>
-      <button id="goalButton" class="small" type="button">Set Goal</button>
-    </header>
-
-    <section class="card hero">
-      <div class="total"><span id="todayTotal">0</span> / <span id="todayGoal">120</span> oz</div>
-      <p id="progressText" class="muted">0% complete</p>
-      <div class="progress"><div id="progressFill"></div></div>
-      <div id="quickButtons" class="grid" style="margin-top:14px"></div>
-    </section>
-
-    <section class="card">
-      <div class="row"><h2>My Cups</h2></div>
-      <div id="cupButtons" class="grid"></div>
-    </section>
-
-    <div class="actions">
-      <button id="undoButton" class="small" type="button">Undo</button>
-      <button id="resetButton" class="danger" type="button">Reset Today</button>
-      <button id="exportButton" class="small" type="button">Export v1 Data</button>
-    </div>
-
-    <section class="card">
-      <h2>Last 7 Days</h2>
-      <div id="history" class="history"></div>
-    </section>
-
-    <section class="card">
-      <h2>Statistics</h2>
-      <div id="stats" class="stats"></div>
-    </section>
-
-    <section class="card">
-      <h2>Today’s Drinks</h2>
-      <div id="timeline" class="timeline"></div>
-    </section>
-
-    <section class="card">
-      <h2>Reset Test Data</h2>
-      <p class="muted">This resets hydration, cups, settings, plant progress, achievements, daily badge counts, and celebrations. It preserves only the anonymous telemetry install ID.</p>
-      <button id="clearButton" class="danger" type="button">Clear All Water Tracker Data</button>
-    </section>
-  </main>
-
-  <script src="v1/js/config.js"></script>
-  <script src="v1/js/storage.js"></script>
-  <script src="v1/js/date.js"></script>
-  <script src="v1/js/hydration.js"></script>
-  <script src="v1/js/stats.js"></script>
-  <script src="v1/js/app.js"></script>
-</body>
-</html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover"><meta name="theme-color" content="#eef8ff"><title>Water Tracker v1</title><link rel="stylesheet" href="v1/css/app.css"></head>
+<body><main class="app">
+<header class="top"><div><div class="muted">Private polished build</div><h1>Water Tracker</h1></div><button id="settingsButton" class="small">⚙️</button></header>
+<section id="homeView" class="view active">
+<section class="card hero"><div class="total"><span id="todayTotal">0</span> / <span id="todayGoal">120</span> oz</div><p id="progressText" class="muted">0% complete</p><div class="progress"><div id="progressFill"></div></div><div id="quickButtons" class="grid" style="margin-top:14px"></div></section>
+<section class="card"><div class="row"><h2>My Cups</h2><button id="addCupButton" class="small">+ Add Cup</button></div><div id="cupButtons" class="grid"></div></section>
+<div class="actions"><button id="undoButton" class="small">Undo</button><button id="resetButton" class="danger">Reset Today</button><button id="restoreButton" class="small">Restore Today</button></div>
+<section class="card"><div class="row"><h2>Progress</h2><strong id="levelText">Level 1</strong></div><div class="progress"><div id="levelFill"></div></div><div id="todayWins" class="wins" style="margin-top:12px"></div><button id="badgesButton" class="small" style="margin-top:12px">All Badges</button></section>
+<section class="card"><div class="row"><h2>Your Plant</h2><strong id="plantName">Seed</strong></div><div id="plantBox" class="plant"></div></section>
+<section class="card"><h2>This Month</h2><div id="monthGrid" class="monthGrid"></div></section>
+<section class="card"><div class="row"><h2>Last 7 Days</h2><span id="weeklyAverage" class="muted"></span></div><div id="history" class="history"></div></section>
+<section class="card"><div class="row"><h2>Today’s Drinks</h2><button id="customButton" class="small">+ Custom</button></div><div id="timeline" class="timeline"></div></section>
+</section>
+<section id="statsView" class="view"><section class="card"><h2>Statistics</h2><div id="stats" class="stats"></div></section></section>
+<section id="badgesView" class="view"><section class="card"><h2>Achievements</h2><div id="badgeList" class="list"></div></section></section>
+</main>
+<nav class="tabs"><button data-view="homeView" class="small">Home</button><button data-view="statsView" class="small">Stats</button><button data-view="badgesView" class="small">Badges</button></nav>
+<dialog id="settingsDialog"><form class="modal" method="dialog"><div class="row"><h2>Settings</h2><button class="small" value="cancel">Done</button></div><label>Goal mode<select id="goalMode"><option value="daily">Same every day</option><option value="weekdayWeekend">Weekday / weekend</option></select></label><label>Daily goal<input id="dailyGoal" type="number"></label><label>Weekday goal<input id="weekdayGoal" type="number"></label><label>Weekend goal<input id="weekendGoal" type="number"></label><label>Theme<select id="theme"><option value="system">System</option><option value="light">Light</option><option value="dark">Dark</option></select></label><div class="actions"><button id="saveSettings" class="primary" type="button">Save</button><button id="exportButton" class="small" type="button">Export</button><button id="importButton" class="small" type="button">Import</button></div><div class="actions"><button id="developerButton" class="small" type="button">Developer Info</button><button id="clearButton" class="danger" type="button">Clear All Data</button></div><p id="versionText" class="muted"></p></form></dialog>
+<dialog id="cupDialog"><form class="modal" method="dialog"><h2 id="cupTitle">Add Cup</h2><label>Name<input id="cupName"></label><label>Ounces<input id="cupOz" type="number"></label><div class="actions"><button id="saveCup" class="primary" type="button">Save</button><button id="deleteCup" class="danger" type="button">Delete</button><button class="small" value="cancel">Cancel</button></div></form></dialog>
+<dialog id="dayDialog"><form class="modal" method="dialog"><div class="row"><h2 id="dayTitle">Day</h2><button class="small" value="cancel">Done</button></div><div class="actions"><button id="addPastDrink" class="primary" type="button">+ Drink</button><button id="resetPastDay" class="danger" type="button">Reset Day</button></div><div id="dayList" class="timeline"></div></form></dialog>
+<dialog id="devDialog"><form class="modal" method="dialog"><div class="row"><h2>Developer Info</h2><button class="small" value="cancel">Done</button></div><div id="devInfo" class="list"></div></form></dialog>
+<div id="toast" class="toast"></div>
+<script src="v1/js/config.js"></script><script src="v1/js/storage.js"></script><script src="v1/js/date.js"></script><script src="v1/js/hydration.js"></script><script src="v1/js/stats.js"></script><script src="v1/js/engagement.js"></script><script src="v1/js/telemetry.js"></script><script src="v1/js/app.js"></script></body></html>
