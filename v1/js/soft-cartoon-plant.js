@@ -5,21 +5,21 @@
 
   function leaf(x,y,scale,side,alt,angle=0){
     return '<g class="leafAnchor" transform="translate('+x+' '+y+') rotate('+angle+')">'
-      +'<g class="leafMotion '+(alt?'alt':'')+'" transform="scale('+(side<0?-scale:scale)+' '+scale+')">'
+      +'<g transform="scale('+(side<0?-scale:scale)+' '+scale+')"><g class="leafMotion '+(alt?'alt':'')+'">'
       +'<path class="petiole" d="M0 0 C3 -1 6 -1 10 0" fill="none" stroke="url(#stemGrad)" stroke-width="4" stroke-linecap="round"/>'
       +'<path d="M8 0 C20 -16 39 -16 49 -3 C37 13 20 15 8 0Z" fill="url(#leafGrad)" stroke="#2d7d3b" stroke-width="1.6"/>'
       +'<path d="M11 0 C24 0 35 -1 45 -3" fill="none" stroke="#9be378" stroke-width="1.35" opacity=".9"/>'
       +'<path d="M25 -2 Q29 -8 34 -11 M28 1 Q34 5 39 7" fill="none" stroke="#72c55b" stroke-width="1" opacity=".65"/>'
-      +'</g></g>';
+      +'</g></g></g>';
   }
 
   function topLeaf(x,y,scale,alt){
     return '<g class="leafAnchor" transform="translate('+x+' '+y+')">'
-      +'<g class="leafMotion '+(alt?'alt':'')+'" transform="scale('+scale+')">'
+      +'<g transform="scale('+scale+')"><g class="leafMotion '+(alt?'alt':'')+'">'
       +'<path class="petiole" d="M0 8 L0 0" fill="none" stroke="url(#stemGrad)" stroke-width="4" stroke-linecap="round"/>'
       +'<path d="M0 1 C-13 -10 -12 -31 0 -43 C12 -31 13 -10 0 1Z" fill="url(#leafGrad)" stroke="#2d7d3b" stroke-width="1.6"/>'
       +'<path d="M0 -2 L0 -37" fill="none" stroke="#9be378" stroke-width="1.35" opacity=".9"/>'
-      +'</g></g>';
+      +'</g></g></g>';
   }
 
   function flower(x,y,scale,small){
