@@ -1,93 +1,15 @@
 (function(){
   const C=window.WT_V1_CONFIG;
-
-  function clone(value){return JSON.parse(JSON.stringify(value));}
-  function readJson(key,fallback){try{const raw=localStorage.getItem(key);return raw?JSON.parse(raw):clone(fallback);}catch{return clone(fallback);}}
-
-  function emptyState(){return{
-    schemaVersion:C.schemaVersion,
-    migratedAt:null,
-    settings:{goalMode:'daily',dailyGoal:C.defaultGoal,weekdayGoal:C.defaultGoal,weekendGoal:C.defaultWeekendGoal,theme:'system'},
-    cups:[{id:'owala',name:'Owala',oz:24},{id:'mug',name:'Mug',oz:12},{id:'stanley',name:'Stanley',oz:40}],
-    days:{},
-    backups:{},
-    engagement:{permanent:{},daily:{counts:{},earnedByDate:{}},celebrations:{goalByDate:{}}}
-  };}
-
-  function normalize(state){
-    const base=emptyState();
-    const x=state&&typeof state==='object'?state:{};
-    return{
-      schemaVersion:C.schemaVersion,
-      migratedAt:x.migratedAt||null,
-      settings:{...base.settings,...(x.settings||{})},
-      cups:Array.isArray(x.cups)&&x.cups.length?x.cups:base.cups,
-      days:x.days&&typeof x.days==='object'?x.days:{},
-      backups:x.backups&&typeof x.backups==='object'?x.backups:{},
-      engagement:{
-        permanent:{...(x.engagement?.permanent||{})},
-        daily:{counts:{...(x.engagement?.daily?.counts||{})},earnedByDate:{...(x.engagement?.daily?.earnedByDate||{})}},
-        celebrations:{goalByDate:{...(x.engagement?.celebrations?.goalByDate||{})}}
-      }
-    };
-  }
-
-  function migrateLegacy(){
-    const next=emptyState();
-    const old=readJson(C.legacyKeys.hydration,{});
-    next.settings={
-      goalMode:old.goalMode||'daily',
-      dailyGoal:Number(old.goal||C.defaultGoal),
-      weekdayGoal:Number(old.weekdayGoal||old.goal||C.defaultGoal),
-      weekendGoal:Number(old.weekendGoal||C.defaultWeekendGoal),
-      theme:old.theme||'system'
-    };
-    if(Array.isArray(old.cups)&&old.cups.length)next.cups=old.cups;
-    next.days=old.days||{};
-    next.backups=old.backups||{};
-
-    const achievements=readJson(C.legacyKeys.achievements,{});
-    const permanent=achievements.u||achievements.unlocked||{};
-    Object.keys(permanent).forEach(id=>{next.engagement.permanent[id]={count:1,firstEarnedAt:new Date(permanent[id]).toISOString()};});
-
-    const daily=readJson(C.legacyKeys.dailyWins,{days:{},counts:{}});
-    next.engagement.daily.counts=daily.counts||{};
-    next.engagement.daily.earnedByDate=daily.days||{};
-
-    const celebrations=readJson(C.legacyKeys.celebrations,{});
-    next.engagement.celebrations.goalByDate=celebrations||{};
-    next.migratedAt=new Date().toISOString();
-    return normalize(next);
-  }
-
-  function load(){
-    const current=readJson(C.storageKey,null);
-    if(current&&current.schemaVersion===C.schemaVersion)return normalize(current);
-    const migrated=migrateLegacy();
-    save(migrated);
-    return migrated;
-  }
-
-  function save(state){localStorage.setItem(C.storageKey,JSON.stringify(normalize(state)));}
-
-  function resetUserData(){
-    [C.storageKey,C.legacyKeys.hydration,C.legacyKeys.achievements,C.legacyKeys.dailyWins,C.legacyKeys.celebrations].forEach(key=>localStorage.removeItem(key));
-  }
-
-  function exportData(state){
-    const blob=new Blob([JSON.stringify(normalize(state),null,2)],{type:'application/json'});
-    const link=document.createElement('a');
-    link.href=URL.createObjectURL(blob);
-    link.download='water-tracker-v1-backup.json';
-    link.click();
-    URL.revokeObjectURL(link.href);
-  }
-
-  function importData(raw){
-    const parsed=typeof raw==='string'?JSON.parse(raw):raw;
-    if(!parsed||parsed.schemaVersion!==C.schemaVersion||!parsed.days)throw new Error('Invalid Water Tracker v1 backup');
-    const state=normalize(parsed);save(state);return state;
-  }
-
-  window.WT_V1_STORAGE={emptyState,normalize,migrateLegacy,load,save,resetUserData,exportData,importData};
+  function clone(v){return JSON.parse(JSON.stringify(v));}function readJson(k,f){try{const r=localStorage.getItem(k);return r?JSON.parse(r):clone(f);}catch{return clone(f);}}
+  function emptyState(){return{schemaVersion:C.schemaVersion,migratedAt:null,settings:{goalMode:'daily',dailyGoal:C.defaultGoal,weekdayGoal:C.defaultGoal,weekendGoal:C.defaultWeekendGoal,theme:'system'},cups:[{id:'owala',name:'Owala',oz:24},{id:'mug',name:'Mug',oz:12},{id:'stanley',name:'Stanley',oz:40}],days:{},backups:{},engagement:{permanent:{},daily:{counts:{},earnedByDate:{}},celebrations:{goalByDate:{}}}};}
+  function normalize(x){const b=emptyState();x=x&&typeof x==='object'?x:{};return{schemaVersion:C.schemaVersion,migratedAt:x.migratedAt||null,settings:{...b.settings,...(x.settings||{})},cups:Array.isArray(x.cups)&&x.cups.length?x.cups:b.cups,days:x.days&&typeof x.days==='object'?x.days:{},backups:x.backups&&typeof x.backups==='object'?x.backups:{},engagement:{permanent:{...(x.engagement?.permanent||{})},daily:{counts:{...(x.engagement?.daily?.counts||{})},earnedByDate:{...(x.engagement?.daily?.earnedByDate||{})}},celebrations:{goalByDate:{...(x.engagement?.celebrations?.goalByDate||{})}}}};}
+  function legacyState(){const n=emptyState(),old=readJson(C.legacyKeys.hydration,{});n.settings={goalMode:old.goalMode||'daily',dailyGoal:Number(old.goal||C.defaultGoal),weekdayGoal:Number(old.weekdayGoal||old.goal||C.defaultGoal),weekendGoal:Number(old.weekendGoal||C.defaultWeekendGoal),theme:old.theme||'system'};if(Array.isArray(old.cups)&&old.cups.length)n.cups=old.cups;n.days=old.days||{};n.backups=old.backups||{};const a=readJson(C.legacyKeys.achievements,{}),p=a.u||a.unlocked||{};Object.keys(p).forEach(id=>{const raw=p[id],date=new Date(raw);n.engagement.permanent[id]={count:1,firstEarnedAt:Number.isNaN(date.getTime())?new Date().toISOString():date.toISOString()};});const d=readJson(C.legacyKeys.dailyWins,{days:{},counts:{}});n.engagement.daily.counts=d.counts||{};n.engagement.daily.earnedByDate=d.days||{};n.engagement.celebrations.goalByDate=readJson(C.legacyKeys.celebrations,{});n.migratedAt=new Date().toISOString();return normalize(n);}
+  function mergeDays(a,b){const out=clone(a||{});Object.keys(b||{}).forEach(k=>{const current=out[k]?.drinks||[],seen=new Set(current.map(d=>d.id||[d.at,d.oz,d.label].join('|'))),extra=(b[k]?.drinks||[]).filter(d=>!seen.has(d.id||[d.at,d.oz,d.label].join('|')));out[k]={...(out[k]||{}),...(b[k]||{}),drinks:[...current,...extra]};});return out;}
+  function merge(current,legacy){const x=normalize(current),l=normalize(legacy);x.days=mergeDays(x.days,l.days);x.backups={...l.backups,...x.backups};const cups=new Map(l.cups.map(c=>[c.id,c]));x.cups.forEach(c=>cups.set(c.id,c));x.cups=[...cups.values()];Object.keys(l.engagement.permanent).forEach(id=>{if(!x.engagement.permanent[id])x.engagement.permanent[id]=l.engagement.permanent[id];});Object.keys(l.engagement.daily.counts).forEach(id=>x.engagement.daily.counts[id]=Math.max(x.engagement.daily.counts[id]||0,l.engagement.daily.counts[id]||0));Object.keys(l.engagement.daily.earnedByDate).forEach(k=>x.engagement.daily.earnedByDate[k]={...(l.engagement.daily.earnedByDate[k]||{}),...(x.engagement.daily.earnedByDate[k]||{})});x.engagement.celebrations.goalByDate={...l.engagement.celebrations.goalByDate,...x.engagement.celebrations.goalByDate};x.migratedAt=x.migratedAt||new Date().toISOString();return normalize(x);}
+  function save(s){localStorage.setItem(C.storageKey,JSON.stringify(normalize(s)));}
+  function load(){const current=readJson(C.storageKey,null),legacy=legacyState(),next=current&&current.schemaVersion===C.schemaVersion?merge(current,legacy):legacy;save(next);return next;}
+  function resetUserData(){[C.storageKey,C.legacyKeys.hydration,C.legacyKeys.achievements,C.legacyKeys.dailyWins,C.legacyKeys.celebrations].forEach(k=>localStorage.removeItem(k));}
+  function exportData(s){const blob=new Blob([JSON.stringify(normalize(s),null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='water-tracker-v1-backup.json';a.click();URL.revokeObjectURL(a.href);}
+  function importData(raw){const p=typeof raw==='string'?JSON.parse(raw):raw;if(!p||p.schemaVersion!==C.schemaVersion||!p.days)throw new Error('Invalid Water Tracker v1 backup');const s=normalize(p);save(s);return s;}
+  window.WT_V1_STORAGE={emptyState,normalize,migrateLegacy:legacyState,load,save,resetUserData,exportData,importData};
 })();
