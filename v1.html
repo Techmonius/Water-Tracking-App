@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover" />
+  <meta name="theme-color" content="#eef8ff" />
+  <title>Water Tracker v1 Test</title>
+  <link rel="stylesheet" href="v1/css/app.css" />
+</head>
+<body>
+  <main class="app">
+    <div class="notice"><strong>Private v1 test build.</strong> The normal app still points to v26. Existing local data is copied into the new unified v2 store on first load.</div>
+
+    <header class="top">
+      <div><div class="muted">Cohesive rebuild</div><h1>Water Tracker</h1></div>
+      <button id="goalButton" class="small" type="button">Set Goal</button>
+    </header>
+
+    <section class="card hero">
+      <div class="total"><span id="todayTotal">0</span> / <span id="todayGoal">120</span> oz</div>
+      <p id="progressText" class="muted">0% complete</p>
+      <div class="progress"><div id="progressFill"></div></div>
+      <div id="quickButtons" class="grid" style="margin-top:14px"></div>
+    </section>
+
+    <section class="card">
+      <div class="row"><h2>My Cups</h2></div>
+      <div id="cupButtons" class="grid"></div>
+    </section>
+
+    <div class="actions">
+      <button id="undoButton" class="small" type="button">Undo</button>
+      <button id="resetButton" class="danger" type="button">Reset Today</button>
+      <button id="exportButton" class="small" type="button">Export v1 Data</button>
+    </div>
+
+    <section class="card">
+      <h2>Last 7 Days</h2>
+      <div id="history" class="history"></div>
+    </section>
+
+    <section class="card">
+      <h2>Statistics</h2>
+      <div id="stats" class="stats"></div>
+    </section>
+
+    <section class="card">
+      <h2>Today’s Drinks</h2>
+      <div id="timeline" class="timeline"></div>
+    </section>
+
+    <section class="card">
+      <h2>Reset Test Data</h2>
+      <p class="muted">This resets hydration, cups, settings, plant progress, achievements, daily badge counts, and celebrations. It preserves only the anonymous telemetry install ID.</p>
+      <button id="clearButton" class="danger" type="button">Clear All Water Tracker Data</button>
+    </section>
+  </main>
+
+  <script src="v1/js/config.js"></script>
+  <script src="v1/js/storage.js"></script>
+  <script src="v1/js/date.js"></script>
+  <script src="v1/js/hydration.js"></script>
+  <script src="v1/js/stats.js"></script>
+  <script src="v1/js/app.js"></script>
+</body>
+</html>
