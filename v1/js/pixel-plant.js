@@ -10,11 +10,15 @@ function render(forceReaction=false){
   const react=forceReaction||(lastTotal!==null&&p.today>lastTotal),goalPulse=!lastGoalMet&&p.today>=p.goal;
   const stages=E.PLANT_STAGES||[],next=stages[p.stage+1],min=stages[p.stage]?.minGoalDays||0,max=next?.minGoalDays||Math.max(min+1,p.goalDays);
   const progress=next?Math.max(0,Math.min(100,((p.goalDays-min)/(max-min))*100)):100;
+  const src=asset(p.stage),motion=(react?' afterDrink':'')+(goalPulse?' goalPulse':'');
   if(name)name.textContent=p.name;
   box.className='plant spritePlant';
   box.innerHTML='<div class="spritePlantScene '+p.moisture+'">'+
     '<div class="pixelDrop '+(react?'show':'')+'"></div>'+
-    '<img class="plantSpriteAsset '+p.moisture+(react?' afterDrink':'')+(goalPulse?' goalPulse':'')+'" src="'+asset(p.stage)+'" alt="'+p.name+', '+p.moisture+'" draggable="false">'+
+    '<div class="spriteLayerStack">'+
+      '<img class="plantSpriteLayer plantSpritePot '+p.moisture+'" src="'+src+'" alt="" draggable="false">'+
+      '<img class="plantSpriteLayer plantSpriteFoliage '+p.moisture+motion+'" src="'+src+'" alt="'+p.name+', '+p.moisture+'" draggable="false">'+
+    '</div>'+
     '<div class="spriteSoil"></div>'+
     '<div class="spriteSparkles '+(p.moisture==='watered'?'show':'')+'"><i></i><i></i><i></i><i></i></div>'+
     '</div><div><p class="plantCondition">'+p.moistureText+'</p><p class="plantMeta">Today: '+p.today+' / '+p.goal+' oz</p><p class="plantMeta">'+p.goalDays+' goal days'+(next?' · next: '+next.name+' at '+next.minGoalDays:' · fully grown')+'</p><div class="plantGrowthTrack"><span style="width:'+progress+'%"></span></div></div>';
