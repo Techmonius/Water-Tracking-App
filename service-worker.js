@@ -1,4 +1,4 @@
-const CACHE_NAME = 'water-tracker-1.4.2';
+const CACHE_NAME = 'water-tracker-1.4.3';
 const ASSETS = [
   './',
   './index.html',
@@ -21,6 +21,7 @@ const ASSETS = [
   './v1/js/telemetry.js',
   './v1/js/app.js',
   './v1/js/parity.js',
+  './v1/js/plant-masks.js',
   './v1/js/pixel-plant.js',
   './v1/assets/plants/stage-1.webp',
   './v1/assets/plants/stage-2.webp',
@@ -31,16 +32,13 @@ const ASSETS = [
   './v1/assets/plants/stage-7.webp',
   './v1/assets/plants/stage-8.webp'
 ];
-
 self.addEventListener('install', event => {
   self.skipWaiting();
   event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(ASSETS)).catch(() => undefined));
 });
-
 self.addEventListener('activate', event => {
   event.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(key => key !== CACHE_NAME).map(key => caches.delete(key)))).then(() => self.clients.claim()));
 });
-
 self.addEventListener('fetch', event => {
   if (event.request.method !== 'GET') return;
   event.respondWith(fetch(event.request, { cache: 'no-store' }).then(response => {
