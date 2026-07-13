@@ -1,0 +1,1 @@
+binary masks are committed through git blobs
