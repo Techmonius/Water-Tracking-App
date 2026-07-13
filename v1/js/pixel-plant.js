@@ -1,33 +1,23 @@
 (function(){
-const S=WT_V1_STORAGE,H=WT_V1_HYDRATION,E=WT_V1_ENGAGEMENT,M=window.WT_PLANT_MASKS;
-let busy=false,lastTotal=null,lastGoalMet=false;
-const api=()=>H.createApi(S.load(),()=>{});
-const asset=stage=>'v1/assets/plants/stage-'+(stage+1)+'.webp';
-function applyMask(el,url){el.style.webkitMaskImage='url("'+url+'")';el.style.maskImage='url("'+url+'")';}
-function render(forceReaction=false){
-  if(busy)return;busy=true;
-  const A=api(),p=E.plant(A),box=document.getElementById('plantBox'),name=document.getElementById('plantName');
-  if(!box){busy=false;return;}
-  const react=forceReaction||(lastTotal!==null&&p.today>lastTotal),goalPulse=!lastGoalMet&&p.today>=p.goal;
-  const stages=E.PLANT_STAGES||[],next=stages[p.stage+1],min=stages[p.stage]?.minGoalDays||0,max=next?.minGoalDays||Math.max(min+1,p.goalDays);
-  const progress=next?Math.max(0,Math.min(100,((p.goalDays-min)/(max-min))*100)):100;
-  const src=asset(p.stage),motion=(react?' afterDrink':'')+(goalPulse?' goalPulse':''),masks=M[String(p.stage+1)];
-  if(name)name.textContent=p.name;
-  box.className='plant spritePlant';
-  box.innerHTML='<div class="spritePlantScene '+p.moisture+'">'+
-    '<div class="pixelDrop '+(react?'show':'')+'"></div>'+
-    '<div class="spriteLayerStack">'+
-      '<img class="plantSpriteLayer plantSpritePot '+p.moisture+'" src="'+src+'" alt="" draggable="false">'+
-      '<img class="plantSpriteLayer plantSpriteFoliage '+p.moisture+motion+'" src="'+src+'" alt="'+p.name+', '+p.moisture+'" draggable="false">'+
-    '</div>'+
-    '<div class="spriteSoil"></div>'+
-    '<div class="spriteSparkles '+(p.moisture==='watered'?'show':'')+'"><i></i><i></i><i></i><i></i></div>'+
-    '</div><div><p class="plantCondition">'+p.moistureText+'</p><p class="plantMeta">Today: '+p.today+' / '+p.goal+' oz</p><p class="plantMeta">'+p.goalDays+' goal days'+(next?' · next: '+next.name+' at '+next.minGoalDays:' · fully grown')+'</p><div class="plantGrowthTrack"><span style="width:'+progress+'%"></span></div></div>';
-  const pot=box.querySelector('.plantSpritePot'),plant=box.querySelector('.plantSpriteFoliage');
-  if(masks){applyMask(pot,masks.static);applyMask(plant,masks.plant);}
-  lastTotal=p.today;lastGoalMet=p.today>=p.goal;busy=false;
-}
-document.addEventListener('click',e=>{if(e.target.closest('#quickButtons,#cupButtons,#saveAmountButton'))setTimeout(()=>render(true),80)},true);
-['storage','wt-data-changed','wt-plant-render'].forEach(type=>window.addEventListener(type,()=>render(false)));
-render();setTimeout(render,300);
+const S=WT_V1_STORAGE,H=WT_V1_HYDRATION,E=WT_V1_ENGAGEMENT;
+let busy=false,lastTotal=null,lastGoalMet=false;const cache=new Map();
+const api=()=>H.createApi(S.load(),()=>{}),asset=s=>'v1/assets/plants/stage-'+(s+1)+'.webp';
+function loadImage(src){return new Promise((ok,fail)=>{const im=new Image();im.onload=()=>ok(im);im.onerror=fail;im.src=src;});}
+function hsv(r,g,b){r/=255;g/=255;b/=255;const mx=Math.max(r,g,b),mn=Math.min(r,g,b),d=mx-mn;let h=0;if(d){if(mx===r)h=((g-b)/d)%6;else if(mx===g)h=(b-r)/d+2;else h=(r-g)/d+4;h*=30;if(h<0)h+=180;}return[h,mx?d/mx*255:0,mx*255];}
+function livingMask(data,stage){const n=128*128,seed=new Uint8Array(n),mask=new Uint8Array(n);if(stage===0)return mask;
+ for(let i=0;i<n;i++){const x=i%128,y=(i/128)|0,a=data[i*4+3];if(!a||y>=102)continue;const [h,s,v]=hsv(data[i*4],data[i*4+1],data[i*4+2]);const green=h>=28&&h<=95&&s>55&&v>35,pink=(h>=155||h<=6)&&s>45&&v>70;if(green||pink)seed[i]=1;}
+ for(let y=1;y<101;y++)for(let x=1;x<127;x++){const i=y*128+x;if(seed[i]){mask[i]=1;continue;}let near=false;for(let yy=-1;yy<=1&&!near;yy++)for(let xx=-1;xx<=1;xx++)if(seed[i+yy*128+xx]){near=true;break;}if(!near)continue;const [h,s,v]=hsv(data[i*4],data[i*4+1],data[i*4+2]);const orange=h>=4&&h<30&&s>55;if(!orange&&v<105)mask[i]=1;}
+ return mask;}
+function potBox(data){let x0=127,x1=0,y0=127,y1=0,found=false;for(let y=40;y<128;y++)for(let x=0;x<128;x++){const i=(y*128+x)*4;if(!data[i+3])continue;const [h,s,v]=hsv(data[i],data[i+1],data[i+2]);if((h>=4&&h<28&&s>70&&v>35)||y>82){x0=Math.min(x0,x);x1=Math.max(x1,x);y0=Math.min(y0,y);y1=Math.max(y1,y);found=true;}}return found?[Math.max(0,x0-3),Math.max(30,y0-4),Math.min(128,x1+4),Math.min(128,y1+4)]:[8,34,120,124];}
+async function build(stage){if(cache.has(stage))return cache.get(stage);const [im,base]=await Promise.all([loadImage(asset(stage)),loadImage(asset(0))]);
+ const src=document.createElement('canvas');src.width=src.height=128;const sc=src.getContext('2d',{willReadFrequently:true});sc.imageSmoothingEnabled=false;sc.drawImage(im,0,0,128,128);const id=sc.getImageData(0,0,128,128),m=livingMask(id.data,stage);
+ const plant=document.createElement('canvas');plant.width=plant.height=128;const pc=plant.getContext('2d');const pd=pc.createImageData(128,128);for(let i=0;i<m.length;i++)if(m[i]){const j=i*4;pd.data[j]=id.data[j];pd.data[j+1]=id.data[j+1];pd.data[j+2]=id.data[j+2];pd.data[j+3]=id.data[j+3];}pc.putImageData(pd,0,0);
+ const bc=document.createElement('canvas');bc.width=bc.height=128;const bctx=bc.getContext('2d',{willReadFrequently:true});bctx.imageSmoothingEnabled=false;bctx.drawImage(base,0,0,128,128);const bd=bctx.getImageData(0,0,128,128);for(let y=35;y<58;y++)for(let x=54;x<75;x++){const j=(y*128+x)*4;if(bd.data[j+3]){const sj=(Math.min(127,x+18)+y*128)*4;bd.data[j]=bd.data[sj];bd.data[j+1]=bd.data[sj+1];bd.data[j+2]=bd.data[sj+2];}}bctx.putImageData(bd,0,0);
+ const stat=document.createElement('canvas');stat.width=stat.height=128;const st=stat.getContext('2d');st.imageSmoothingEnabled=false;const b=potBox(id.data),cw=112,ch=90;st.drawImage(bc,8,34,cw,ch,b[0],b[1],b[2]-b[0],b[3]-b[1]);
+ const out={static:stat,plant};cache.set(stage,out);return out;}
+function copyCanvas(from,to){const c=to.getContext('2d');c.imageSmoothingEnabled=false;c.clearRect(0,0,128,128);c.drawImage(from,0,0);}
+async function render(forceReaction=false){if(busy)return;busy=true;try{const A=api(),p=E.plant(A),box=document.getElementById('plantBox'),name=document.getElementById('plantName');if(!box)return;const react=forceReaction||(lastTotal!==null&&p.today>lastTotal),goalPulse=!lastGoalMet&&p.today>=p.goal,stages=E.PLANT_STAGES||[],next=stages[p.stage+1],min=stages[p.stage]?.minGoalDays||0,max=next?.minGoalDays||Math.max(min+1,p.goalDays),progress=next?Math.max(0,Math.min(100,((p.goalDays-min)/(max-min))*100)):100,layers=await build(p.stage),motion=(react?' afterDrink':'')+(goalPulse?' goalPulse':'');if(name)name.textContent=p.name;
+ box.className='plant spritePlant';box.innerHTML='<div class="spritePlantScene '+p.moisture+'"><div class="pixelDrop '+(react?'show':'')+'"></div><div class="spriteLayerStack"><canvas class="plantRaster plantRasterStatic '+p.moisture+'" width="128" height="128"></canvas><canvas class="plantRaster plantRasterLiving '+p.moisture+motion+'" width="128" height="128" aria-label="'+p.name+', '+p.moisture+'"></canvas></div><div class="spriteSoil"></div><div class="spriteSparkles '+(p.moisture==='watered'?'show':'')+'"><i></i><i></i><i></i><i></i></div></div><div><p class="plantCondition">'+p.moistureText+'</p><p class="plantMeta">Today: '+p.today+' / '+p.goal+' oz</p><p class="plantMeta">'+p.goalDays+' goal days'+(next?' · next: '+next.name+' at '+next.minGoalDays:' · fully grown')+'</p><div class="plantGrowthTrack"><span style="width:'+progress+'%"></span></div></div>';
+ copyCanvas(layers.static,box.querySelector('.plantRasterStatic'));copyCanvas(layers.plant,box.querySelector('.plantRasterLiving'));lastTotal=p.today;lastGoalMet=p.today>=p.goal;}finally{busy=false;}}
+document.addEventListener('click',e=>{if(e.target.closest('#quickButtons,#cupButtons,#saveAmountButton'))setTimeout(()=>render(true),80)},true);['storage','wt-data-changed','wt-plant-render'].forEach(t=>window.addEventListener(t,()=>render(false)));render();setTimeout(render,300);
 })();
