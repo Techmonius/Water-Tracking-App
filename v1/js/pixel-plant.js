@@ -4,14 +4,23 @@ let busy=false,lastTotal=null,lastGoalMet=false;const cache=new Map();
 const api=()=>H.createApi(S.load(),()=>{}),asset=s=>'v1/assets/plants/stage-'+(s+1)+'.webp';
 function loadImage(src){return new Promise((ok,fail)=>{const im=new Image();im.onload=()=>ok(im);im.onerror=fail;im.src=src;});}
 function hsv(r,g,b){r/=255;g/=255;b/=255;const mx=Math.max(r,g,b),mn=Math.min(r,g,b),d=mx-mn;let h=0;if(d){if(mx===r)h=((g-b)/d)%6;else if(mx===g)h=(b-r)/d+2;else h=(r-g)/d+4;h*=30;if(h<0)h+=180;}return[h,mx?d/mx*255:0,mx*255];}
+function fillPlantHoles(mask,data){const n=128*128,seen=new Uint8Array(n),q=[];let x0=127,x1=0,y0=127,y1=0,found=false;
+ for(let i=0;i<n;i++)if(mask[i]){const x=i%128,y=(i/128)|0;x0=Math.min(x0,x);x1=Math.max(x1,x);y0=Math.min(y0,y);y1=Math.max(y1,y);found=true;}
+ if(!found)return mask;x0=Math.max(0,x0-2);x1=Math.min(127,x1+2);y0=Math.max(0,y0-2);y1=Math.min(101,y1+2);
+ const push=(x,y)=>{const i=y*128+x;if(seen[i]||mask[i])return;seen[i]=1;q.push(i);};
+ for(let x=x0;x<=x1;x++){push(x,y0);push(x,y1);}for(let y=y0;y<=y1;y++){push(x0,y);push(x1,y);}
+ while(q.length){const p=q.pop(),x=p%128,y=(p/128)|0;for(const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]]){const nx=x+dx,ny=y+dy;if(nx<x0||nx>x1||ny<y0||ny>y1)continue;push(nx,ny);}}
+ const out=mask.slice();for(let y=y0+1;y<y1;y++)for(let x=x0+1;x<x1;x++){const i=y*128+x,j=i*4;if(out[i]||seen[i]||!data[j+3])continue;const [h,s,v]=hsv(data[j],data[j+1],data[j+2]);const terracotta=h>=4&&h<28&&s>58&&data[j]>data[j+1]*1.08;const soil=y>79&&h<35&&v<145;if(!terracotta&&!soil)out[i]=1;}
+ for(let pass=0;pass<2;pass++){const next=out.slice();for(let y=y0+1;y<y1;y++)for(let x=x0+1;x<x1;x++){const i=y*128+x,j=i*4;if(out[i]||!data[j+3])continue;let count=0;for(let yy=-1;yy<=1;yy++)for(let xx=-1;xx<=1;xx++)if(xx||yy)count+=out[i+yy*128+xx];if(count>=6){const [h,s,v]=hsv(data[j],data[j+1],data[j+2]);const pot=h>=4&&h<28&&s>65&&y>72;if(!pot)next[i]=1;}}out.set(next);}
+ return out;}
 function livingMask(data,stage){const n=128*128,core=new Uint8Array(n),candidate=new Uint8Array(n);if(stage===0)return core;
- for(let i=0;i<n;i++){const x=i%128,y=(i/128)|0,j=i*4,a=data[j+3];if(!a||y>=99)continue;const r=data[j],g=data[j+1],b=data[j+2],[h,s,v]=hsv(r,g,b);const green=h>=25&&h<=95&&s>45&&v>30,pink=(h>=150||h<=8)&&s>35&&v>65,yellow=h>=18&&h<36&&s>55&&v>95&&y<74,warm=r>g*1.12&&r>b*1.25&&r>55;if(green||pink||yellow)core[i]=1;if(!warm&&v<175)candidate[i]=1;}
- let mask=core.slice();for(let pass=0;pass<1;pass++){const next=mask.slice();for(let y=1;y<98;y++)for(let x=1;x<127;x++){const i=y*128+x;if(mask[i]||!candidate[i])continue;let near=false;for(let yy=-1;yy<=1&&!near;yy++)for(let xx=-1;xx<=1;xx++)if(mask[i+yy*128+xx]){near=true;break;}if(near)next[i]=1;}mask=next;}
+ for(let i=0;i<n;i++){const y=(i/128)|0,j=i*4,a=data[j+3];if(!a||y>=99)continue;const r=data[j],g=data[j+1],b=data[j+2],[h,s,v]=hsv(r,g,b);const green=h>=25&&h<=95&&s>45&&v>30,pink=(h>=150||h<=8)&&s>35&&v>65,yellow=h>=18&&h<36&&s>55&&v>95&&y<74,warm=r>g*1.12&&r>b*1.25&&r>55;if(green||pink||yellow)core[i]=1;if(!warm&&v<175)candidate[i]=1;}
+ let mask=core.slice();const next=mask.slice();for(let y=1;y<98;y++)for(let x=1;x<127;x++){const i=y*128+x;if(mask[i]||!candidate[i])continue;let near=false;for(let yy=-1;yy<=1&&!near;yy++)for(let xx=-1;xx<=1;xx++)if(mask[i+yy*128+xx]){near=true;break;}if(near)next[i]=1;}mask=next;
  const seen=new Uint8Array(n),parts=[];for(let i=0;i<n;i++){if(!mask[i]||seen[i])continue;const q=[i],part=[];seen[i]=1;while(q.length){const p=q.pop();part.push(p);const x=p%128,y=(p/128)|0;for(let yy=-1;yy<=1;yy++)for(let xx=-1;xx<=1;xx++){if(!xx&&!yy)continue;const nx=x+xx,ny=y+yy;if(nx<0||nx>127||ny<0||ny>127)continue;const ni=ny*128+nx;if(mask[ni]&&!seen[ni]){seen[ni]=1;q.push(ni);}}}parts.push(part);}
  let best=null,bestScore=-1;for(const part of parts){let top=127,central=false,coreCount=0;for(const p of part){const x=p%128,y=(p/128)|0;if(y<top)top=y;if(x>44&&x<84&&y<82)central=true;if(core[p])coreCount++;}const score=part.length+coreCount*2+(central?600:0)+(top<55?350:0);if(score>bestScore){bestScore=score;best=part;}}
  const out=new Uint8Array(n);if(best)for(const p of best)out[p]=1;
  for(let y=84;y<128;y++)for(let x=0;x<128;x++){const i=y*128+x;if(!out[i])continue;const j=i*4,r=data[j],g=data[j+1],b=data[j+2],[h,s,v]=hsv(r,g,b);const living=(h>=25&&h<=95&&s>42&&v>28)||((h>=150||h<=8)&&s>35&&v>65);if(!living&&Math.abs(x-64)>9)out[i]=0;}
- return out;}
+ return fillPlantHoles(out,data);}
 function potBox(data){let x0=127,x1=0,y0=127,y1=0,found=false;for(let y=40;y<128;y++)for(let x=0;x<128;x++){const i=(y*128+x)*4;if(!data[i+3])continue;const [h,s,v]=hsv(data[i],data[i+1],data[i+2]);if((h>=4&&h<28&&s>70&&v>35)||y>82){x0=Math.min(x0,x);x1=Math.max(x1,x);y0=Math.min(y0,y);y1=Math.max(y1,y);found=true;}}return found?[Math.max(0,x0-3),Math.max(30,y0-4),Math.min(128,x1+4),Math.min(128,y1+4)]:[8,34,120,124];}
 async function build(stage){if(cache.has(stage))return cache.get(stage);const [im,base]=await Promise.all([loadImage(asset(stage)),loadImage(asset(0))]);
  const src=document.createElement('canvas');src.width=src.height=128;const sc=src.getContext('2d',{willReadFrequently:true});sc.imageSmoothingEnabled=false;sc.drawImage(im,0,0,128,128);const id=sc.getImageData(0,0,128,128),m=livingMask(id.data,stage);
