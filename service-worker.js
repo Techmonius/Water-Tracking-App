@@ -1,4 +1,4 @@
-const CACHE_NAME = 'water-tracker-1.5.1';
+const CACHE_NAME = 'water-tracker-1.5.2';
 const ASSETS = [
   './',
   './index.html',
