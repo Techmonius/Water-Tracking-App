@@ -1,4 +1,4 @@
-const CACHE_NAME = 'water-tracker-1.5.2';
+const CACHE_NAME = 'water-tracker-1.5.3';
 const ASSETS = [
   './',
   './index.html',
@@ -20,6 +20,7 @@ const ASSETS = [
   './v1/js/engagement.js',
   './v1/js/telemetry.js',
   './v1/js/app.js',
+  './v1/js/birthday-prompt.js',
   './v1/js/parity.js',
   './v1/js/pixel-plant.js',
   './v1/assets/plants/stage-1.webp',
