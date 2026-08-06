@@ -1,4 +1,9 @@
 (function(){
+  const alignment=document.createElement('script');
+  alignment.src='v1/js/plant-alignment.js';
+  alignment.defer=true;
+  document.head.appendChild(alignment);
+
   function promptForBirthday(){
     const S=window.WT_V1_STORAGE;
     if(!S)return;
