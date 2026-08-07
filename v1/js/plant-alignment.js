@@ -1,10 +1,22 @@
 (function(){
-  const cache=new Map();
-  function asset(n){return 'v1/assets/plants/stage-'+n+'.webp';}
-  function load(n){if(cache.has(n))return cache.get(n);const p=new Promise((resolve,reject)=>{const im=new Image();im.onload=()=>resolve(im);im.onerror=reject;im.src=asset(n);});cache.set(n,p);return p;}
-  function hsv(r,g,b){r/=255;g/=255;b/=255;const mx=Math.max(r,g,b),mn=Math.min(r,g,b),d=mx-mn;let h=0;if(d){if(mx===r)h=((g-b)/d)%6;else if(mx===g)h=(b-r)/d+2;else h=(r-g)/d+4;h*=30;if(h<0)h+=180;}return[h,mx?d/mx*255:0,mx*255];}
-  async function root(n){const im=await load(n),c=document.createElement('canvas');c.width=c.height=128;const x=c.getContext('2d',{willReadFrequently:true});x.drawImage(im,0,0,128,128);const d=x.getImageData(0,0,128,128).data,pts=[];let maxY=-1;for(let y=0;y<100;y++)for(let xx=30;xx<98;xx++){const i=(y*128+xx)*4;if(!d[i+3])continue;const [h,s,v]=hsv(d[i],d[i+1],d[i+2]);if(h>=25&&h<=95&&s>42&&v>28){if(y>maxY)maxY=y;pts.push([xx,y]);}}if(maxY<0)return{x:64,y:84};const low=pts.filter(p=>p[1]>=maxY-4);return{x:low.reduce((a,p)=>a+p[0],0)/low.length,y:low.reduce((a,p)=>a+p[1],0)/low.length};}
-  async function align(){const name=document.getElementById('plantName');if(!name||name.textContent.trim()!=='More Flowers')return;const living=document.querySelector('#plantBox .plantRasterLiving');if(!living)return;try{const [prev,current,next]=await Promise.all([root(6),root(7),root(8)]),target={x:(prev.x+next.x)/2,y:(prev.y+next.y)/2},dx=target.x-current.x,dy=target.y-current.y,scale=living.getBoundingClientRect().width/128;living.style.marginLeft=(dx*scale).toFixed(2)+'px';living.style.marginTop=(dy*scale).toFixed(2)+'px';living.style.setProperty('--plant-align-x',(dx*scale).toFixed(2)+'px');living.style.setProperty('--plant-align-y',(dy*scale).toFixed(2)+'px');}catch(e){console.warn('More Flowers alignment skipped',e);}}
-  function schedule(){setTimeout(align,120);}
-  window.addEventListener('wt-plant-render',schedule);window.addEventListener('resize',schedule);schedule();setTimeout(schedule,450);
+  function align(){
+    const name=document.getElementById('plantName');
+    const living=document.querySelector('#plantBox .plantRasterLiving');
+    if(!name||!living)return;
+    if(name.textContent.trim()==='More Flowers'){
+      living.style.marginLeft='0px';
+      living.style.marginTop='-16px';
+      living.style.removeProperty('--plant-align-x');
+      living.style.removeProperty('--plant-align-y');
+    }else{
+      living.style.marginLeft='0px';
+      living.style.marginTop='0px';
+    }
+  }
+  function schedule(){setTimeout(align,0);}
+  window.addEventListener('wt-plant-render',schedule);
+  window.addEventListener('wt-data-changed',schedule);
+  window.addEventListener('resize',schedule);
+  schedule();
+  setTimeout(schedule,450);
 })();
