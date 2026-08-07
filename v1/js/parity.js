@@ -28,7 +28,20 @@
   document.querySelectorAll('dialog').forEach(d=>{d.addEventListener('toggle',()=>d.open?lock():unlock());d.addEventListener('close',unlock);});
   async function checkUpdate(){const banner=$('updateBanner');if(!banner)return;banner.hidden=true;try{const r=await fetch('v1-version.txt?check='+Date.now(),{cache:'no-store'});const latest=(await r.text()).trim();if(latest&&latest!==C.appVersion)banner.hidden=false;}catch{}}
   $('updateNow').onclick=async()=>{const b=$('updateNow');b.textContent='Updating...';try{if('serviceWorker'in navigator){const regs=await navigator.serviceWorker.getRegistrations();await Promise.all(regs.map(r=>r.update().catch(()=>{})));}if('caches'in window){const keys=await caches.keys();await Promise.all(keys.map(k=>caches.delete(k)));}}catch{}const u=new URL(location.href);u.searchParams.set('refresh',Date.now());location.replace(u.toString());};
+
+  function correctMoreFlowersPosition(){
+    const box=$('plantBox'),name=$('plantName');
+    if(!box||!name)return;
+    const living=box.querySelector('.plantRasterLiving');
+    if(!living)return;
+    living.style.marginTop=name.textContent.trim()==='More Flowers'?'-16px':'0px';
+  }
+  const plantBox=$('plantBox');
+  if(plantBox)new MutationObserver(correctMoreFlowersPosition).observe(plantBox,{childList:true,subtree:true});
+  window.addEventListener('wt-plant-render',()=>setTimeout(correctMoreFlowersPosition,0));
+  window.addEventListener('wt-data-changed',()=>setTimeout(correctMoreFlowersPosition,0));
+
   window.addEventListener('wt-data-changed',refreshDetails);window.addEventListener('storage',refreshDetails);
   document.addEventListener('dblclick',e=>e.preventDefault(),{passive:false});document.addEventListener('gesturestart',e=>e.preventDefault());
-  refreshDetails();checkUpdate();setInterval(checkUpdate,5*60*1000);
+  refreshDetails();correctMoreFlowersPosition();checkUpdate();setInterval(checkUpdate,5*60*1000);
 })();
