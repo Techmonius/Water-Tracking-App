@@ -35,10 +35,11 @@
     const living=box.querySelector('.plantRasterLiving');
     if(!living)return;
     const more=name.textContent.trim()==='More Flowers';
-    // Stage 7 source art is offset down/right relative to the shared pot model.
-    // Correct only the living layer; the pot/soil/shadow remain fixed.
+    // Preserve the source artwork's original horizontal placement over its pot.
+    // Only lift the living layer vertically so it emerges from the soil at the
+    // same visual height as the surrounding growth stages.
     living.style.marginTop=more?'-16px':'0px';
-    living.style.marginLeft=more?'-11px':'0px';
+    living.style.marginLeft='0px';
   }
   const plantBox=$('plantBox');
   if(plantBox)new MutationObserver(correctMoreFlowersPosition).observe(plantBox,{childList:true,subtree:true});
