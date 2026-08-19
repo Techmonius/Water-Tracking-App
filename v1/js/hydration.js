@@ -6,7 +6,12 @@
   function createApi(initialState,onChange){
     let state=window.WT_V1_STORAGE.normalize(initialState);
 
-    function commit(){window.WT_V1_STORAGE.save(state);onChange?.(state);return state;}
+    function commit(){
+      window.WT_V1_STORAGE.save(state);
+      onChange?.(state);
+      window.dispatchEvent(new CustomEvent('wt-data-changed',{detail:{source:'hydration'}}));
+      return state;
+    }
     function getState(){return state;}
     function isFutureDay(key){return String(key)>D.dayKey();}
     function assertEditableDay(key){if(isFutureDay(key))throw new Error('Future days cannot be edited.');}
