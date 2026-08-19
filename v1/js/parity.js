@@ -7,7 +7,7 @@
     if($('currentStreak'))$('currentStreak').textContent=stats.currentStreak;
     if($('bestStreak'))$('bestStreak').textContent=stats.bestStreak;
     if($('goalModeLabel'))$('goalModeLabel').textContent=state.settings.goalMode==='weekdayWeekend'?'Split':'Daily';
-    const undo=$('undoButton');if(undo){undo.disabled=!last;undo.textContent=last?'↶ Undo +'+last.oz+' oz':'↶ Undo last drink';}
+    const undo=$('undoButton');if(undo){undo.disabled=!last;undo.textContent=last?'↶ Undo +'+last.oz+' oz':'Nothing to undo';}
     document.querySelectorAll('#cupButtons .cup').forEach(b=>b.classList.toggle('editmode',editCups));
     renderCupEditPrompt();
   }
