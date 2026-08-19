@@ -40,10 +40,13 @@
       return {amount,total:totalFor(key),goal:goalFor(key),key};
     }
     function undoToday(){
-      const day=ensureDay();
+      const key=D.dayKey();
+      const day=ensureDay(key);
+      if(!day.drinks.length)return null;
+      backupDay(key);
       const removed=day.drinks.pop();
-      if(!removed)return null;
-      backupDay();commit();return removed;
+      commit();
+      return removed;
     }
     function deleteDrink(key,id){
       assertEditableDay(key);
