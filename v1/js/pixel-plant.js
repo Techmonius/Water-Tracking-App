@@ -2,7 +2,15 @@
 const S=WT_V1_STORAGE,H=WT_V1_HYDRATION,E=WT_V1_ENGAGEMENT;
 const api=()=>H.createApi(S.load(),()=>{});
 const asset=stage=>'v1/assets/plants/stage-'+(stage+1)+'.webp';
+const DROP_COUNTS={dry:0,damp:3,moist:6,watered:10};
 let busy=false;
+
+function dropletMarkup(moisture){
+  const count=DROP_COUNTS[moisture]??0;
+  let html='';
+  for(let i=0;i<count;i++) html+='<i class="plantDrop drop-'+(i+1)+'"></i>';
+  return html;
+}
 
 async function render(){
   if(busy)return;
@@ -28,7 +36,7 @@ async function render(){
     box.innerHTML=
       '<div class="spritePlantScene staticConceptScene moisture-'+moisture+'" data-moisture="'+moisture+'">'+
         '<img class="plantConceptArt" src="'+asset(p.stage)+'" alt="'+p.name+' plant">'+
-        '<div class="plantEffectLayer" aria-hidden="true"></div>'+
+        '<div class="plantEffectLayer" aria-hidden="true">'+dropletMarkup(moisture)+'</div>'+
       '</div>'+
       '<div>'+
         '<p class="plantCondition">'+p.moistureText+'</p>'+
