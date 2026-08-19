@@ -19,12 +19,16 @@ async function render(){
     const min=stages[p.stage]?.minGoalDays||0;
     const max=next?.minGoalDays||Math.max(min+1,p.goalDays);
     const progress=next?Math.max(0,Math.min(100,((p.goalDays-min)/(max-min))*100)):100;
+    const moisture=String(p.moisture||'dry').replace(/[^a-z0-9_-]/gi,'');
 
     if(name)name.textContent=p.name;
-    box.className='plant spritePlant staticConceptPlant';
+    box.className='plant spritePlant staticConceptPlant moisture-'+moisture;
+    box.dataset.moisture=moisture;
+    box.dataset.stage=String(p.stage);
     box.innerHTML=
-      '<div class="spritePlantScene staticConceptScene">'+
+      '<div class="spritePlantScene staticConceptScene moisture-'+moisture+'" data-moisture="'+moisture+'">'+
         '<img class="plantConceptArt" src="'+asset(p.stage)+'" alt="'+p.name+' plant">'+
+        '<div class="plantEffectLayer" aria-hidden="true"></div>'+
       '</div>'+
       '<div>'+
         '<p class="plantCondition">'+p.moistureText+'</p>'+
