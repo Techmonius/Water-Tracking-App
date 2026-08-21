@@ -1,0 +1,21 @@
+(function(){
+  const STARTER_STAGES=[
+    {name:'Seed',minGoalDays:0,asset:'v1/assets/plants/stage-1.webp',flowers:false},
+    {name:'Sprout',minGoalDays:3,asset:'v1/assets/plants/stage-2.webp',flowers:false},
+    {name:'Two Leaves',minGoalDays:6,asset:'v1/assets/plants/stage-3.webp',flowers:false},
+    {name:'Leafy Plant',minGoalDays:10,asset:'v1/assets/plants/stage-4.webp',flowers:false},
+    {name:'Bud',minGoalDays:15,asset:'v1/assets/plants/stage-5.webp',flowers:false},
+    {name:'First Flower',minGoalDays:21,asset:'v1/assets/plants/stage-6.webp',flowers:true},
+    {name:'More Flowers',minGoalDays:30,asset:'v1/assets/plants/stage-7.webp',flowers:true},
+    {name:'Full Bloom',minGoalDays:45,asset:'v1/assets/plants/stage-8.webp',flowers:true}
+  ];
+  const CATALOG=Object.freeze({
+    starter_flower:Object.freeze({id:'starter_flower',name:'Starter Flower',durationGoalDays:45,stages:Object.freeze(STARTER_STAGES.map(Object.freeze))})
+  });
+  const DEFAULT_ID='starter_flower';
+  function definition(id){return CATALOG[id]||CATALOG[DEFAULT_ID];}
+  function stageFor(id,goalDays){const plant=definition(id),days=Math.max(0,Number(goalDays)||0);let index=0;for(let i=0;i<plant.stages.length;i++)if(days>=plant.stages[i].minGoalDays)index=i;return{index,stage:plant.stages[index],plant};}
+  function progress(state,lifetimeGoalDays){const p=state?.plantProgress||{},plant=definition(p.currentPlantId),baseline=Math.max(0,Number(p.startedAtGoalDays)||0),days=Math.max(0,(Number(lifetimeGoalDays)||0)-baseline),current=stageFor(plant.id,days);return{plant,plantId:plant.id,baseline,goalDays:days,stageIndex:current.index,stage:current.stage,complete:days>=plant.durationGoalDays,completionPending:p.completionPending||null,completedPlants:Array.isArray(p.completedPlants)?p.completedPlants:[]};}
+  function mysteryPool(completedIds=[]){const done=new Set(completedIds);return Object.values(CATALOG).filter(p=>p.id!==DEFAULT_ID&&!done.has(p.id));}
+  window.WT_V1_PLANTS={CATALOG,DEFAULT_ID,definition,stageFor,progress,mysteryPool};
+})();
