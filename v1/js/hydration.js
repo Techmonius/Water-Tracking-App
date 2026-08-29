@@ -6,9 +6,8 @@
   function createApi(initialState,onChange){
     let state=window.WT_V1_STORAGE.normalize(initialState);
 
-    function commit(){
-      const latest=window.WT_V1_STORAGE.load();
-      state.plantProgress=latest.plantProgress;
+    function commit(syncPlant=true){
+      if(syncPlant){const latest=window.WT_V1_STORAGE.load();state.plantProgress=latest.plantProgress;}
       window.WT_V1_STORAGE.save(state);
       onChange?.(state);
       window.dispatchEvent(new CustomEvent('wt-data-changed',{detail:{source:'hydration'}}));
@@ -79,7 +78,7 @@
     }
     function deleteCup(id){state.cups=state.cups.filter(c=>c.id!==id);commit();}
     function saveSettings(settings){state.settings={...state.settings,...settings};commit();}
-    function replaceState(next){state=window.WT_V1_STORAGE.normalize(next);commit();}
+    function replaceState(next){state=window.WT_V1_STORAGE.normalize(next);commit(false);}
 
     return {getState,goalFor,isFutureDay,ensureDay,drinksFor,totalFor,addDrink,undoToday,deleteDrink,resetDay,restoreDay,saveCup,deleteCup,saveSettings,replaceState};
   }
