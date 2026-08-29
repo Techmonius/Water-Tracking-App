@@ -1,5 +1,5 @@
 (function(){
-  const flowerLayer=(asset,cx,cy)=>Object.freeze({asset,cx,cy});
+  const flowerLayer=(asset,cx,cy,box=null,scale=1.018)=>Object.freeze({asset,cx,cy,box,scale});
   const flowerAnimation=(layers)=>Object.freeze({layers:Object.freeze(layers)});
   const STARTER_STAGES=[
     {name:'Seed',minGoalDays:0,asset:'v1/assets/plants/stage-1.webp',flowerAnimation:null},
@@ -16,11 +16,11 @@
       flowerLayer('v1/assets/plants/overlays/stage-7-flower-3.svg',68,31)
     ])},
     {name:'Full Bloom',minGoalDays:45,asset:'v1/assets/plants/stage-8.webp',flowerAnimation:flowerAnimation([
-      flowerLayer('v1/assets/plants/overlays/stage-8-flower-1.webp',48.4,13.3),
-      flowerLayer('v1/assets/plants/overlays/stage-8-flower-2.webp',35.9,24.2),
-      flowerLayer('v1/assets/plants/overlays/stage-8-flower-3.webp',58.6,32.0),
-      flowerLayer('v1/assets/plants/overlays/stage-8-flower-4.webp',71.1,40.6),
-      flowerLayer('v1/assets/plants/overlays/stage-8-flower-5.webp',16.4,46.1)
+      flowerLayer('v1/assets/plants/overlays/stage-8-flower-1.webp',49.86,46.95,{x:35.15625,y:1.5625,w:26.5625,h:25},1.08),
+      flowerLayer('v1/assets/plants/overlays/stage-8-flower-2.webp',46.92,46.8,{x:23.4375,y:12.5,w:26.5625,h:25},1.08),
+      flowerLayer('v1/assets/plants/overlays/stage-8-flower-3.webp',47.08,45.03,{x:46.09375,y:21.09375,w:26.5625,h:24.21875},1.08),
+      flowerLayer('v1/assets/plants/overlays/stage-8-flower-4.webp',54.86,51.61,{x:57.8125,y:28.90625,w:24.21875,h:22.65625},1.08),
+      flowerLayer('v1/assets/plants/overlays/stage-8-flower-5.webp',48.25,51.88,{x:5.46875,y:35.15625,w:22.65625,h:21.09375},1.08)
     ])}
   ];
   const CATALOG=Object.freeze({starter_flower:Object.freeze({id:'starter_flower',name:'Starter Flower',durationGoalDays:45,stages:Object.freeze(STARTER_STAGES.map(Object.freeze))})});
