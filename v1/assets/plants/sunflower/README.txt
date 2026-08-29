@@ -1,1 +1,0 @@
-Sunflower production sprite assets are staged for upload. Plant remains disabled until binary sprite and flower overlay assets are committed.
