@@ -1,1 +1,0 @@
-Do not enable sunflower yet. Binary sprites and flower overlays are being installed; this marker is temporary and will be removed when Plant 2 is production-ready.
