@@ -7,6 +7,8 @@
     let state=window.WT_V1_STORAGE.normalize(initialState);
 
     function commit(){
+      const latest=window.WT_V1_STORAGE.load();
+      state.plantProgress=latest.plantProgress;
       window.WT_V1_STORAGE.save(state);
       onChange?.(state);
       window.dispatchEvent(new CustomEvent('wt-data-changed',{detail:{source:'hydration'}}));
