@@ -1,0 +1,68 @@
+name: Materialize Monstera raster assets
+on:
+  push:
+    branches: [main]
+permissions:
+  contents: write
+jobs:
+  materialize:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Convert embedded Monstera PNG data to standalone stage sprites
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import base64, re
+
+          root = Path('.')
+          sources = [root/'v1/js/monstera-assets-a.js', root/'v1/js/monstera-assets-b.js', root/'v1/js/monstera-assets-c.js']
+          stages = {}
+          for src in sources:
+              text = src.read_text()
+              for n, payload in re.findall(r"S\.stage(\d+)='data:image/png;base64,([^']+)'", text):
+                  stages[int(n)] = base64.b64decode(payload)
+          if sorted(stages) != list(range(1, 9)):
+              raise SystemExit(f'Expected Monstera stages 1-8, found {sorted(stages)}')
+
+          out = root/'v1/assets/plants/monstera'
+          out.mkdir(parents=True, exist_ok=True)
+          for n in range(1, 9):
+              (out/f'stage-{n}.png').write_bytes(stages[n])
+
+          plants = root/'v1/js/plants.js'
+          text = plants.read_text()
+          text = text.replace("  const M=window.WT_V1_MONSTERA_ASSETS||{};\n", '')
+          for n in range(1, 9):
+              text = text.replace(f'asset:M.stage{n}', f"asset:'v1/assets/plants/monstera/stage-{n}.png'")
+          plants.write_text(text)
+
+          config = root/'v1/js/config.js'
+          text = config.read_text().replace("appVersion: '1.7.2'", "appVersion: '1.7.3'")
+          config.write_text(text)
+          (root/'v1-version.txt').write_text('1.7.3')
+
+          sw = root/'service-worker.js'
+          text = sw.read_text().replace("water-tracker-1.7.2", "water-tracker-1.7.3")
+          marker = "'./v1/assets/plants/stage-8.webp'"
+          additions = ','.join(f"'./v1/assets/plants/monstera/stage-{n}.png'" for n in range(1,9))
+          if additions not in text:
+              text = text.replace(marker, marker+','+additions)
+          sw.write_text(text)
+
+          for src in sources:
+              src.unlink()
+          PY
+      - name: Commit production assets and remove staging data files
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git rm --cached --ignore-unmatch .github/workflows/materialize-monstera.yml >/dev/null 2>&1 || true
+          rm -f .github/workflows/materialize-monstera.yml
+          git add -A
+          git commit -m "Publish Monstera as standalone raster sprites"
+          git push
