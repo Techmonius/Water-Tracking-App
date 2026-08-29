@@ -40,9 +40,21 @@
       flowerLayer(S.flower8,50.76,54.21,{x:27.34375,y:2.34375,w:46.09375,h:42.96875},1.08)
     ])}
   ];
+  const M=window.WT_V1_MONSTERA_ASSETS||{};
+  const MONSTERA_STAGES=[
+    {name:'Seed',minGoalDays:0,asset:M.stage1,flowerAnimation:null},
+    {name:'Sprout',minGoalDays:4,asset:M.stage2,flowerAnimation:null},
+    {name:'Young Plant',minGoalDays:8,asset:M.stage3,flowerAnimation:null},
+    {name:'Growing Stronger',minGoalDays:13,asset:M.stage4,flowerAnimation:null},
+    {name:'Large Leaves',minGoalDays:19,asset:M.stage5,flowerAnimation:null},
+    {name:'Mature Plant',minGoalDays:26,asset:M.stage6,flowerAnimation:null},
+    {name:'Almost Full',minGoalDays:33,asset:M.stage7,flowerAnimation:null},
+    {name:'Full Monstera',minGoalDays:40,asset:M.stage8,flowerAnimation:null}
+  ];
   const CATALOG=Object.freeze({
     starter_flower:Object.freeze({id:'starter_flower',name:'Starter Flower',durationGoalDays:45,enabled:true,stages:Object.freeze(STARTER_STAGES.map(Object.freeze))}),
-    sunflower:Object.freeze({id:'sunflower',name:'Sunflower',durationGoalDays:36,enabled:true,stages:Object.freeze(SUNFLOWER_STAGES.map(Object.freeze))})
+    sunflower:Object.freeze({id:'sunflower',name:'Sunflower',durationGoalDays:36,enabled:true,stages:Object.freeze(SUNFLOWER_STAGES.map(Object.freeze))}),
+    monstera:Object.freeze({id:'monstera',name:'Monstera',durationGoalDays:40,enabled:true,stages:Object.freeze(MONSTERA_STAGES.map(Object.freeze))})
   });
   const DEFAULT_ID='starter_flower';
   function definition(id){return CATALOG[id]||CATALOG[DEFAULT_ID];}
