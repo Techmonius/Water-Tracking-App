@@ -15,7 +15,7 @@
       flowerLayer('v1/assets/plants/overlays/stage-7-flower-2.svg',50,24),
       flowerLayer('v1/assets/plants/overlays/stage-7-flower-3.svg',68,31)
     ])},
-    {name:'Full Bloom',minGoalDays:45,asset:'v1/assets/plants/stage-8.webp',flowerAnimation:null}
+    {name:'Full Bloom',minGoalDays:45,asset:'v1/assets/plants/stage-8-fixed.svg',flowerAnimation:null}
   ];
   const CATALOG=Object.freeze({starter_flower:Object.freeze({id:'starter_flower',name:'Starter Flower',durationGoalDays:45,stages:Object.freeze(STARTER_STAGES.map(Object.freeze))})});
   const DEFAULT_ID='starter_flower';
