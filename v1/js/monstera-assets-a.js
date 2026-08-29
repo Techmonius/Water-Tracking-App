@@ -1,0 +1,1 @@
+(function(){const S=window.WT_V1_MONSTERA_ASSETS||(window.WT_V1_MONSTERA_ASSETS={});})();
