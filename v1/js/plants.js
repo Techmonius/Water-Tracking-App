@@ -23,11 +23,24 @@
       flowerLayer('v1/assets/plants/overlays/stage-8-flower-5.webp',48.25,51.88,{x:5.46875,y:35.15625,w:22.65625,h:21.09375},1.08)
     ])}
   ];
-  const CATALOG=Object.freeze({starter_flower:Object.freeze({id:'starter_flower',name:'Starter Flower',durationGoalDays:45,stages:Object.freeze(STARTER_STAGES.map(Object.freeze))})});
+  const SUNFLOWER_STAGES=[
+    {name:'Seed',minGoalDays:0,asset:'v1/assets/plants/sunflower/stage-1.webp',flowerAnimation:null},
+    {name:'Sprout',minGoalDays:4,asset:'v1/assets/plants/sunflower/stage-2.webp',flowerAnimation:null},
+    {name:'Young Plant',minGoalDays:8,asset:'v1/assets/plants/sunflower/stage-3.webp',flowerAnimation:null},
+    {name:'Taller Plant',minGoalDays:14,asset:'v1/assets/plants/sunflower/stage-4.webp',flowerAnimation:null},
+    {name:'Bud Forms',minGoalDays:20,asset:'v1/assets/plants/sunflower/stage-5.webp',flowerAnimation:null},
+    {name:'Flower Opening',minGoalDays:26,asset:'v1/assets/plants/sunflower/stage-6.webp',flowerAnimation:null},
+    {name:'Full Sunflower',minGoalDays:32,asset:'v1/assets/plants/sunflower/stage-7.webp',flowerAnimation:null},
+    {name:'Sun Facing',minGoalDays:36,asset:'v1/assets/plants/sunflower/stage-8.webp',flowerAnimation:null}
+  ];
+  const CATALOG=Object.freeze({
+    starter_flower:Object.freeze({id:'starter_flower',name:'Starter Flower',durationGoalDays:45,enabled:true,stages:Object.freeze(STARTER_STAGES.map(Object.freeze))}),
+    sunflower:Object.freeze({id:'sunflower',name:'Sunflower',durationGoalDays:36,enabled:false,stages:Object.freeze(SUNFLOWER_STAGES.map(Object.freeze))})
+  });
   const DEFAULT_ID='starter_flower';
   function definition(id){return CATALOG[id]||CATALOG[DEFAULT_ID];}
   function stageFor(id,goalDays){const plant=definition(id),days=Math.max(0,Number(goalDays)||0);let index=0;for(let i=0;i<plant.stages.length;i++)if(days>=plant.stages[i].minGoalDays)index=i;return{index,stage:plant.stages[index],plant};}
   function progress(state,lifetimeGoalDays){const p=state?.plantProgress||{},plant=definition(p.currentPlantId),baseline=Math.max(0,Number(p.startedAtGoalDays)||0),days=Math.max(0,(Number(lifetimeGoalDays)||0)-baseline),current=stageFor(plant.id,days);return{plant,plantId:plant.id,baseline,goalDays:days,stageIndex:current.index,stage:current.stage,complete:days>=plant.durationGoalDays,completionPending:p.completionPending||null,completedPlants:Array.isArray(p.completedPlants)?p.completedPlants:[]};}
-  function mysteryPool(completedIds=[]){const done=new Set(completedIds);return Object.values(CATALOG).filter(p=>p.id!==DEFAULT_ID&&!done.has(p.id));}
+  function mysteryPool(completedIds=[]){const done=new Set(completedIds);return Object.values(CATALOG).filter(p=>p.id!==DEFAULT_ID&&p.enabled!==false&&!done.has(p.id));}
   window.WT_V1_PLANTS={CATALOG,DEFAULT_ID,definition,stageFor,progress,mysteryPool};
 })();
