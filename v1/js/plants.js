@@ -1,6 +1,9 @@
+// Plant 1 is the renderer reference. Plants 2+ use standalone raster stages and raster-only animation overlays.
 (function(){
   const flowerLayer=(asset,cx,cy,box=null,scale=1.018)=>Object.freeze({asset,cx,cy,box,scale});
   const flowerAnimation=(layers)=>Object.freeze({layers:Object.freeze(layers)});
+  const raster=(plant,stage)=>`v1/assets/plants/${plant}/stage-${stage}.png`;
+  const overlay=(plant,stage,name)=>`v1/assets/plants/${plant}/overlays/stage-${stage}-${name}.png`;
   const STARTER_STAGES=[
     {name:'Seed',minGoalDays:0,asset:'v1/assets/plants/stage-1.webp',flowerAnimation:null},
     {name:'Sprout',minGoalDays:3,asset:'v1/assets/plants/stage-2.webp',flowerAnimation:null},
@@ -23,33 +26,31 @@
       flowerLayer('v1/assets/plants/overlays/stage-8-flower-5.webp',48.25,51.88,{x:5.46875,y:35.15625,w:22.65625,h:21.09375},1.08)
     ])}
   ];
-  const S=window.WT_V1_SUNFLOWER_ASSETS||{};
   const SUNFLOWER_STAGES=[
-    {name:'Seed',minGoalDays:0,asset:S.stage1,flowerAnimation:null},
-    {name:'Sprout',minGoalDays:4,asset:S.stage2,flowerAnimation:null},
-    {name:'Young Plant',minGoalDays:8,asset:S.stage3,flowerAnimation:null},
-    {name:'Taller Plant',minGoalDays:14,asset:S.stage4,flowerAnimation:null},
-    {name:'Bud Forms',minGoalDays:20,asset:S.stage5,flowerAnimation:null},
-    {name:'Flower Opening',minGoalDays:26,asset:S.stage6,flowerAnimation:flowerAnimation([
-      flowerLayer(S.flower6,49.21,52.51,{x:35.15625,y:2.34375,w:32.03125,h:29.6875},1.06)
+    {name:'Seed',minGoalDays:0,asset:raster('sunflower',1),flowerAnimation:null},
+    {name:'Sprout',minGoalDays:4,asset:raster('sunflower',2),flowerAnimation:null},
+    {name:'Young Plant',minGoalDays:8,asset:raster('sunflower',3),flowerAnimation:null},
+    {name:'Taller Plant',minGoalDays:14,asset:raster('sunflower',4),flowerAnimation:null},
+    {name:'Bud Forms',minGoalDays:20,asset:raster('sunflower',5),flowerAnimation:null},
+    {name:'Flower Opening',minGoalDays:26,asset:raster('sunflower',6),flowerAnimation:flowerAnimation([
+      flowerLayer(overlay('sunflower',6,'flower'),49.21,52.51,{x:35.15625,y:2.34375,w:32.03125,h:29.6875},1.06)
     ])},
-    {name:'Full Sunflower',minGoalDays:32,asset:S.stage7,flowerAnimation:flowerAnimation([
-      flowerLayer(S.flower7,48.07,51.85,{x:31.25,y:2.34375,w:42.1875,h:39.84375},1.07)
+    {name:'Full Sunflower',minGoalDays:32,asset:raster('sunflower',7),flowerAnimation:flowerAnimation([
+      flowerLayer(overlay('sunflower',7,'flower'),48.07,51.85,{x:31.25,y:2.34375,w:42.1875,h:39.84375},1.07)
     ])},
-    {name:'Sun Facing',minGoalDays:36,asset:S.stage8,flowerAnimation:flowerAnimation([
-      flowerLayer(S.flower8,50.76,54.21,{x:27.34375,y:2.34375,w:46.09375,h:42.96875},1.08)
+    {name:'Sun Facing',minGoalDays:36,asset:raster('sunflower',8),flowerAnimation:flowerAnimation([
+      flowerLayer(overlay('sunflower',8,'flower'),50.76,54.21,{x:27.34375,y:2.34375,w:46.09375,h:42.96875},1.08)
     ])}
   ];
-  const M=window.WT_V1_MONSTERA_ASSETS||{};
   const MONSTERA_STAGES=[
-    {name:'Seed',minGoalDays:0,asset:M.stage1,flowerAnimation:null},
-    {name:'Sprout',minGoalDays:4,asset:M.stage2,flowerAnimation:null},
-    {name:'Young Plant',minGoalDays:8,asset:M.stage3,flowerAnimation:null},
-    {name:'Growing Stronger',minGoalDays:13,asset:M.stage4,flowerAnimation:null},
-    {name:'Large Leaves',minGoalDays:19,asset:M.stage5,flowerAnimation:null},
-    {name:'Mature Plant',minGoalDays:26,asset:M.stage6,flowerAnimation:null},
-    {name:'Almost Full',minGoalDays:33,asset:M.stage7,flowerAnimation:null},
-    {name:'Full Monstera',minGoalDays:40,asset:M.stage8,flowerAnimation:null}
+    {name:'Seed',minGoalDays:0,asset:raster('monstera',1),flowerAnimation:null},
+    {name:'Sprout',minGoalDays:4,asset:raster('monstera',2),flowerAnimation:null},
+    {name:'Young Plant',minGoalDays:8,asset:raster('monstera',3),flowerAnimation:null},
+    {name:'Growing Stronger',minGoalDays:13,asset:raster('monstera',4),flowerAnimation:null},
+    {name:'Large Leaves',minGoalDays:19,asset:raster('monstera',5),flowerAnimation:null},
+    {name:'Mature Plant',minGoalDays:26,asset:raster('monstera',6),flowerAnimation:null},
+    {name:'Almost Full',minGoalDays:33,asset:raster('monstera',7),flowerAnimation:null},
+    {name:'Full Monstera',minGoalDays:40,asset:raster('monstera',8),flowerAnimation:null}
   ];
   const CATALOG=Object.freeze({
     starter_flower:Object.freeze({id:'starter_flower',name:'Starter Flower',durationGoalDays:45,enabled:true,stages:Object.freeze(STARTER_STAGES.map(Object.freeze))}),
