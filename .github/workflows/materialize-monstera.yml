@@ -1,139 +1,33 @@
-name: Normalize plant raster assets
+name: Diagnose plant assets
 on:
   push:
     branches: [main]
 permissions:
-  contents: write
+  contents: read
 jobs:
-  normalize:
-    if: github.actor != 'github-actions[bot]'
+  diagnose:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Materialize embedded raster assets and simplify catalog
-        shell: bash
+      - shell: bash
         run: |
           python3 - <<'PY'
           from pathlib import Path
-          import base64, re
-
-          root = Path('.')
-
-          def decode_payload(payload):
-              payload = ''.join(payload.split())
-              payload += '=' * (-len(payload) % 4)
-              return base64.b64decode(payload)
-
-          def extract(files):
-              found = {}
-              for src in files:
-                  if not src.exists():
-                      continue
-                  text = src.read_text()
-                  for key, payload in re.findall(r"(?:S\.)?(stage\d+|flower\d+)[\"']?\s*(?:=|:)\s*[\"']data:image/png;base64,([^\"']+)", text):
-                      found[key] = decode_payload(payload)
-              return found
-
-          sunflower_sources = [root/f'v1/js/sunflower-assets-{x}.js' for x in 'abc']
-          monstera_sources = [root/f'v1/js/monstera-assets-{x}.js' for x in 'abc']
-          sunflower = extract(sunflower_sources)
-          monstera = extract(monstera_sources)
-
-          expected_sunflower = {f'stage{i}' for i in range(1,9)} | {'flower6','flower7','flower8'}
-          expected_monstera = {f'stage{i}' for i in range(1,9)}
-          if set(sunflower) != expected_sunflower:
-              raise SystemExit(f'Sunflower assets incomplete: found {sorted(sunflower)}')
-          if set(monstera) != expected_monstera:
-              raise SystemExit(f'Monstera assets incomplete: found {sorted(monstera)}')
-
-          sun_dir = root/'v1/assets/plants/sunflower'
-          sun_overlay = sun_dir/'overlays'
-          mon_dir = root/'v1/assets/plants/monstera'
-          sun_overlay.mkdir(parents=True, exist_ok=True)
-          mon_dir.mkdir(parents=True, exist_ok=True)
-
-          for i in range(1,9):
-              (sun_dir/f'stage-{i}.png').write_bytes(sunflower[f'stage{i}'])
-              (mon_dir/f'stage-{i}.png').write_bytes(monstera[f'stage{i}'])
-          for i in (6,7,8):
-              (sun_overlay/f'stage-{i}-flower.png').write_bytes(sunflower[f'flower{i}'])
-
-          plants = root/'v1/js/plants.js'
-          text = plants.read_text()
-          text = text.replace("  const S=window.WT_V1_SUNFLOWER_ASSETS||{};\n", '')
-          text = text.replace("  const M=window.WT_V1_MONSTERA_ASSETS||{};\n", '')
-          for i in range(1,9):
-              text = text.replace(f'asset:S.stage{i}', f"asset:raster('sunflower',{i})")
-              text = text.replace(f'asset:M.stage{i}', f"asset:raster('monstera',{i})")
-          for i in (6,7,8):
-              text = text.replace(f'flowerLayer(S.flower{i},', f"flowerLayer(overlay('sunflower',{i},'flower'),")
-          helper = "  const raster=(plant,stage)=>`v1/assets/plants/${plant}/stage-${stage}.png`;\n  const overlay=(plant,stage,name)=>`v1/assets/plants/${plant}/overlays/stage-${stage}-${name}.png`;\n"
-          anchor = "  const flowerAnimation=(layers)=>Object.freeze({layers:Object.freeze(layers)});\n"
-          if helper not in text:
-              text = text.replace(anchor, anchor + helper)
-          header = "// Plant asset standard: use standalone raster stage files. Animated parts use standalone raster overlays only.\n"
-          if not text.startswith('// Plant asset standard:'):
-              text = header + text
-          plants.write_text(text)
-
-          index = root/'index.html'
-          text = index.read_text()
-          for name in ['sunflower-assets-a.js','sunflower-assets-b.js','sunflower-assets-c.js','monstera-assets-a.js','monstera-assets-b.js','monstera-assets-c.js']:
-              text = text.replace(f'<script src="v1/js/{name}"></script>', '')
-          index.write_text(text)
-
-          config = root/'v1/js/config.js'
-          text = config.read_text()
-          text = re.sub(r"appVersion: '[^']+'", "appVersion: '1.8.0'", text, count=1)
-          config.write_text(text)
-          (root/'v1-version.txt').write_text('1.8.0')
-
-          sw = root/'service-worker.js'
-          text = sw.read_text()
-          text = re.sub(r"water-tracker-[^']+", 'water-tracker-1.8.0', text, count=1)
-          for name in ['sunflower-assets-a.js','sunflower-assets-b.js','sunflower-assets-c.js','monstera-assets-a.js','monstera-assets-b.js','monstera-assets-c.js']:
-              text = text.replace(f",'./v1/js/{name}'", '')
-          marker = "'./v1/assets/plants/stage-8.webp'"
-          new_assets = []
-          new_assets += [f"'./v1/assets/plants/sunflower/stage-{i}.png'" for i in range(1,9)]
-          new_assets += [f"'./v1/assets/plants/sunflower/overlays/stage-{i}-flower.png'" for i in (6,7,8)]
-          new_assets += [f"'./v1/assets/plants/monstera/stage-{i}.png'" for i in range(1,9)]
-          addition = ',' + ','.join(new_assets)
-          if "'./v1/assets/plants/monstera/stage-8.png'" not in text:
-              text = text.replace(marker, marker + addition)
-          sw.write_text(text)
-
-          readme = root/'v1/assets/plants/README.md'
-          readme.write_text("""# Plant asset standard\n\nPlant 1 is the rendering reference. Keep plant artwork as standalone raster files; do not recreate approved pixel art as SVG or procedural graphics.\n\n## Folder layout\n\n- Base stages: `v1/assets/plants/<plant-id>/stage-1.png` through `stage-8.png`\n- Animated parts only: `v1/assets/plants/<plant-id>/overlays/stage-<n>-<part>.png`\n\n## Rules\n\n1. Extract from approved concept art without redrawing.\n2. Keep each base stage complete and static.\n3. Use transparent raster overlays only for pixels intended to animate.\n4. Keep pot, soil, stems, and non-animated foliage in the base sprite.\n5. Moisture filters and water droplets stay renderer-level effects.\n6. Add new raster files to `service-worker.js` and bump the app/cache version in the same release.\n7. Do not embed image data in JavaScript.\n""")
-
-          for src in sunflower_sources + monstera_sources:
-              if src.exists():
-                  src.unlink()
+          import base64,re
+          for family in ('sunflower','monstera'):
+              print('FAMILY',family)
+              for suffix in 'abc':
+                  p=Path(f'v1/js/{family}-assets-{suffix}.js')
+                  if not p.exists(): continue
+                  text=p.read_text()
+                  pairs=re.findall(r"(?:S\.)?(stage\d+|flower\d+)[\"']?\s*(?:=|:)\s*[\"']data:image/png;base64,([^\"']+)",text)
+                  for key,payload in pairs:
+                      raw=''.join(payload.split())
+                      try:
+                          padded=raw + '='*((-len(raw))%4)
+                          data=base64.b64decode(padded,validate=True)
+                          ok=data.startswith(b'\x89PNG\r\n\x1a\n')
+                          print(p.name,key,'chars',len(raw),'mod',len(raw)%4,'decoded',len(data),'png',ok)
+                      except Exception as e:
+                          print(p.name,key,'chars',len(raw),'mod',len(raw)%4,'ERROR',repr(e))
           PY
-      - name: Validate normalized plant assets
-        shell: bash
-        run: |
-          set -euo pipefail
-          test "$(cat v1-version.txt)" = "1.8.0"
-          grep -q "appVersion: '1.8.0'" v1/js/config.js
-          grep -q "water-tracker-1.8.0" service-worker.js
-          ! grep -R "data:image/png;base64" v1/js --include='*flower-assets*.js' --include='sunflower-assets-*.js' --include='monstera-assets-*.js' || false
-          for plant in sunflower monstera; do
-            for i in 1 2 3 4 5 6 7 8; do
-              test -s "v1/assets/plants/$plant/stage-$i.png"
-              file "v1/assets/plants/$plant/stage-$i.png" | grep -q 'PNG image data'
-            done
-          done
-          for i in 6 7 8; do test -s "v1/assets/plants/sunflower/overlays/stage-$i-flower.png"; done
-          grep -q "raster('sunflower',1)" v1/js/plants.js
-          grep -q "raster('monstera',8)" v1/js/plants.js
-          ! grep -q "WT_V1_SUNFLOWER_ASSETS\|WT_V1_MONSTERA_ASSETS" v1/js/plants.js
-      - name: Commit clean production asset architecture
-        shell: bash
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          rm -f .github/workflows/materialize-monstera.yml
-          git add -A
-          git commit -m "Normalize plant assets and publish Monstera"
-          git push
