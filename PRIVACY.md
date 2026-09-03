@@ -1,11 +1,24 @@
-# Privacy
+# Water Tracker Privacy
 
-Water Tracker is local-only.
+Water Tracker is a local-first app. Your drink-by-drink hydration history, cup names/sizes, settings, backups, achievements, and plant records are stored in browser storage on the device where you use the app. There is no user account or cloud sync.
 
-The app stores water logs, cup sizes, theme, and goal settings in the browser storage on the device where the app is used.
+Water Tracker also sends a small automatic usage report to the app owner's Google Apps Script/Google Sheet backend. This reporting is part of the current app and does not include an opt-out.
 
-There is no account, no server database, no cloud sync, no ads, no analytics, and no Apple Health integration.
+Usage reports can include:
 
-GitHub Pages only hosts the app files. It does not receive or store personal water logs.
+- a random persistent install ID and temporary session ID
+- event name and event time
+- app version, device platform, Home Screen/browser status, screen, locale, and timezone
+- optional birthday, if you enter one for the Birthday Hydration badge
+- summary hydration statistics such as today's total/goal, lifetime ounces, goal days, tracked days, and streak counts
+- summary plant progress and achievement counts
 
-Known limitation: clearing browser/site data or removing the Home Screen app may erase the local log.
+For a drink-log event, the event-specific data includes the number of ounces logged and whether it was added to today or a previous day. Usage reports do **not** upload your full drink history, cup names, or an account name/email because Water Tracker has no account system.
+
+The usage reports are used to understand app behavior and improve future versions. They are not used for advertising and are not sold to advertisers.
+
+GitHub Pages hosts the application files. The telemetry backend is separate from GitHub Pages.
+
+## Local data limitation
+
+Because the main app data is local to the browser/Home Screen app, clearing site data or removing the Home Screen app can erase local history. Use the Export feature if you want a backup before clearing data or changing devices.

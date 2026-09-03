@@ -27,8 +27,17 @@
   function unlock(){setTimeout(()=>{if(document.querySelector('dialog[open]'))return;document.body.dataset.locked='false';Object.assign(document.body.style,{position:'',top:'',left:'',right:'',width:''});window.scrollTo(0,scrollY);},0);}
   document.querySelectorAll('dialog').forEach(d=>{d.addEventListener('toggle',()=>d.open?lock():unlock());d.addEventListener('close',unlock);});
   async function checkUpdate(){const banner=$('updateBanner');if(!banner)return;banner.hidden=true;try{const r=await fetch('v1-version.txt?check='+Date.now(),{cache:'no-store'});const latest=(await r.text()).trim();if(latest&&latest!==C.appVersion)banner.hidden=false;}catch{}}
-  $('updateNow').onclick=async()=>{const b=$('updateNow');b.textContent='Updating...';try{if('serviceWorker'in navigator){const regs=await navigator.serviceWorker.getRegistrations();await Promise.all(regs.map(r=>r.update().catch(()=>{})));}if('caches'in window){const keys=await caches.keys();await Promise.all(keys.map(k=>caches.delete(k)));}}catch{}const u=new URL(location.href);u.searchParams.set('refresh',Date.now());location.replace(u.toString());};
+  function waitForControllerChange(timeout=2500){return new Promise(resolve=>{let done=false;const finish=()=>{if(done)return;done=true;navigator.serviceWorker?.removeEventListener?.('controllerchange',finish);resolve();};navigator.serviceWorker?.addEventListener?.('controllerchange',finish,{once:true});setTimeout(finish,timeout);});}
+  $('updateNow').onclick=async()=>{
+    const b=$('updateNow');b.disabled=true;b.textContent='Updating...';
+    try{
+      if('serviceWorker'in navigator){
+        const reg=await navigator.serviceWorker.getRegistration();
+        if(reg){const changed=waitForControllerChange();await reg.update();if(reg.waiting)reg.waiting.postMessage({type:'SKIP_WAITING'});await changed;}
+      }
+    }catch{}
+    const u=new URL(location.href);u.searchParams.set('refresh',Date.now());location.replace(u.toString());
+  };
   window.addEventListener('wt-data-changed',refreshDetails);window.addEventListener('storage',refreshDetails);
-  document.addEventListener('dblclick',e=>e.preventDefault(),{passive:false});document.addEventListener('gesturestart',e=>e.preventDefault());
   refreshDetails();checkUpdate();setInterval(checkUpdate,5*60*1000);
 })();

@@ -61,6 +61,31 @@
   function definition(id){return CATALOG[id]||CATALOG[DEFAULT_ID];}
   function stageFor(id,goalDays){const plant=definition(id),days=Math.max(0,Number(goalDays)||0);let index=0;for(let i=0;i<plant.stages.length;i++)if(days>=plant.stages[i].minGoalDays)index=i;return{index,stage:plant.stages[index],plant};}
   function progress(state,lifetimeGoalDays){const p=state?.plantProgress||{},plant=definition(p.currentPlantId),baseline=Math.max(0,Number(p.startedAtGoalDays)||0),days=Math.max(0,(Number(lifetimeGoalDays)||0)-baseline),current=stageFor(plant.id,days);return{plant,plantId:plant.id,baseline,goalDays:days,stageIndex:current.index,stage:current.stage,complete:days>=plant.durationGoalDays,completionPending:p.completionPending||null,completedPlants:Array.isArray(p.completedPlants)?p.completedPlants:[]};}
-  function mysteryPool(completedIds=[]){const done=new Set(completedIds);return Object.values(CATALOG).filter(p=>p.id!==DEFAULT_ID&&p.enabled!==false&&!done.has(p.id));}
-  window.WT_V1_PLANTS={CATALOG,DEFAULT_ID,definition,stageFor,progress,mysteryPool};
+  function completedIds(progressState){return(progressState?.completedPlants||[]).map(x=>typeof x==='string'?x:x?.plantId).filter(Boolean);}
+  function mysteryPool(doneIds=[]){const done=new Set(doneIds);return Object.values(CATALOG).filter(p=>p.id!==DEFAULT_ID&&p.enabled!==false&&!done.has(p.id));}
+  function awardPendingSeed(pp,random=Math.random,now=()=>new Date().toISOString()){
+    if(pp.nextSeed)return false;
+    const pool=mysteryPool(completedIds(pp));
+    if(!pool.length)return false;
+    const raw=Math.floor((Number(random())||0)*pool.length),index=Math.max(0,Math.min(pool.length-1,raw)),next=pool[index];
+    pp.nextSeed={plantId:next.id,awardedAt:now()};return true;
+  }
+  function reconcileCompletion(state,lifetimeGoalDays,random=Math.random,now=()=>new Date().toISOString()){
+    const pp=state.plantProgress||(state.plantProgress={currentPlantId:DEFAULT_ID,startedAtGoalDays:0,startedAtDate:null,completionPending:null,completedPlants:[],nextSeed:null});
+    if(!Array.isArray(pp.completedPlants))pp.completedPlants=[];
+    const life=progress(state,lifetimeGoalDays);let changed=false;
+    if(pp.completionPending){changed=awardPendingSeed(pp,random,now)||changed;return{changed,life};}
+    if(!life.complete)return{changed:false,life};
+    if(!completedIds(pp).includes(life.plantId)){pp.completedPlants.push({plantId:life.plantId,name:life.plant.name,completedAt:now(),goalDays:life.goalDays});changed=true;}
+    pp.completionPending={plantId:life.plantId,plantName:life.plant.name,completedAt:now(),goalDays:life.goalDays};changed=true;
+    changed=awardPendingSeed(pp,random,now)||changed;
+    return{changed,life};
+  }
+  function plantMysterySeed(state,lifetimeGoalDays,startedAtDate){
+    const pp=state.plantProgress||{},seed=pp.nextSeed;
+    if(!pp.completionPending||!seed?.plantId)return null;
+    const next=definition(seed.plantId);if(!next||next.enabled===false||next.id===DEFAULT_ID)return null;
+    pp.currentPlantId=next.id;pp.startedAtGoalDays=Math.max(0,Number(lifetimeGoalDays)||0);pp.startedAtDate=startedAtDate||null;pp.completionPending=null;pp.nextSeed=null;state.plantProgress=pp;return next;
+  }
+  window.WT_V1_PLANTS={CATALOG,DEFAULT_ID,definition,stageFor,progress,completedIds,mysteryPool,reconcileCompletion,plantMysterySeed};
 })();
