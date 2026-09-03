@@ -1,6 +1,5 @@
 const CACHE_PREFIX='water-tracker-';
 const CACHE_NAME='water-tracker-1.9.0';
-const LEGACY_RECOVERY_CACHE='water-tracker-1.8.1';
 const CORE_ASSETS=[
   './',
   './index.html',
@@ -34,23 +33,22 @@ const CORE_ASSETS=[
 self.addEventListener('install',event=>{
   event.waitUntil((async()=>{
     const cache=await caches.open(CACHE_NAME);
+    // Do not activate unless the complete application shell is available.
     await cache.addAll(CORE_ASSETS);
-    // v1.8.1 had a destructive in-app updater. Only that upgrade is forced
-    // through immediately; normal future releases wait for the user to update.
-    const keys=await caches.keys();
-    if(keys.includes(LEGACY_RECOVERY_CACHE))self.skipWaiting();
+    // v1.9.0 is a one-time recovery release from the older destructive updater.
+    // Future releases can return to user-triggered activation once 1.9.0 controls the app.
+    self.skipWaiting();
   })());
 });
 
 self.addEventListener('activate',event=>{
   event.waitUntil((async()=>{
-    const keys=await caches.keys(),recovering=keys.includes(LEGACY_RECOVERY_CACHE);
+    const keys=await caches.keys();
     await Promise.all(keys.filter(key=>key.startsWith(CACHE_PREFIX)&&key!==CACHE_NAME).map(key=>caches.delete(key)));
     await self.clients.claim();
-    if(recovering){
-      const clients=await self.clients.matchAll({type:'window'});
-      await Promise.all(clients.map(client=>client.navigate(client.url).catch(()=>null)));
-    }
+    // Reload existing windows once so no 1.8.1 document keeps running against the 1.9.0 worker.
+    const clients=await self.clients.matchAll({type:'window'});
+    await Promise.all(clients.map(client=>client.navigate(client.url).catch(()=>null)));
   })());
 });
 
@@ -61,10 +59,16 @@ self.addEventListener('fetch',event=>{
   const request=event.request,url=new URL(request.url);
   if(url.origin!==self.location.origin)return;
 
+  // Version checks must always reach the network and must not create a new
+  // cache entry every five minutes because the request carries a timestamp.
+  if(url.pathname.endsWith('/v1-version.txt')){
+    event.respondWith(fetch(request,{cache:'no-store'}).catch(()=>caches.match('./v1-version.txt')));
+    return;
+  }
+
   if(request.mode==='navigate'){
     event.respondWith((async()=>{
       // Keep the HTML shell atomic with the service worker version controlling it.
-      // A new worker pre-caches its complete shell before activation.
       const cache=await caches.open(CACHE_NAME);
       const cached=(await cache.match('./index.html'))||(await cache.match('./'));
       if(cached)return cached;

@@ -32,7 +32,8 @@ function staticReferences(){
   const sw=read('service-worker.js'),block=sw.match(/const CORE_ASSETS=\[(.*?)\];/s)?.[1]||'';
   assert(!sw.includes("cache.put('./index.html'"),'service worker never mutates the cached app shell at runtime');
   assert(sw.includes("key.startsWith(CACHE_PREFIX)"),'service worker deletes only Water Tracker caches');
-  assert(sw.includes("LEGACY_RECOVERY_CACHE='water-tracker-1.8.1'"),'v1.8.1 has an explicit safe recovery path');
+  assert(sw.includes('self.skipWaiting()')&&sw.includes('client.navigate(client.url)'),'v1.9.0 has an explicit forced recovery path from the old updater');
+  assert(sw.includes("url.pathname.endsWith('/v1-version.txt')"),'version checks bypass runtime caching');
   const core=[...block.matchAll(/["']([^"']+)["']/g)].map(m=>localRef(m[1])).filter(Boolean);
   core.filter(ref=>ref).forEach(ref=>assert(exists(ref),`service-worker core asset exists: ${ref}`));
 
@@ -44,7 +45,7 @@ function staticReferences(){
   const cacheVersion=read('service-worker.js').match(/CACHE_NAME=['"]water-tracker-([^'"]+)/)?.[1];
   assert(Boolean(configVersion)&&configVersion===fileVersion&&fileVersion===cacheVersion,`version alignment: ${configVersion} / ${fileVersion} / ${cacheVersion}`);
 
-  const jsText=fs.readdirSync(path.join(root,'v1/js')).filter(x=>x.endsWith('.js')).map(x=>read(path.join('v1/js',x))).join('\n');
+  const jsText=fs.readdirSync(path.join(root,'v1/js')).filter(x=>x.endsWith('.js')).map(x=>read(path.join('v1/js',x)))).join('\n');
   assert(!jsText.includes('plant-alignment.js'),'no missing plant-alignment dependency');
   assert(!/data:image\//i.test(jsText),'no production image data embedded in JavaScript');
 
