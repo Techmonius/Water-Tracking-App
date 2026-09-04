@@ -35,7 +35,7 @@ function staticReferences(){
   assert(sw.includes('self.skipWaiting()')&&sw.includes('client.navigate(client.url)'),'v1.9.0 has an explicit forced recovery path from the old updater');
   assert(sw.includes("url.pathname.endsWith('/v1-version.txt')"),'version checks bypass runtime caching');
   const core=[...block.matchAll(/["']([^"']+)["']/g)].map(m=>localRef(m[1])).filter(Boolean);
-  core.filter(ref=>ref).forEach(ref=>assert(exists(ref),`service-worker core asset exists: ${ref}`));
+  core.forEach(ref=>assert(exists(ref),`service-worker core asset exists: ${ref}`));
 
   const manifest=JSON.parse(read('manifest.webmanifest'));
   (manifest.icons||[]).forEach(icon=>assert(exists(localRef(icon.src)),`manifest icon exists: ${icon.src}`));
@@ -45,7 +45,7 @@ function staticReferences(){
   const cacheVersion=read('service-worker.js').match(/CACHE_NAME=['"]water-tracker-([^'"]+)/)?.[1];
   assert(Boolean(configVersion)&&configVersion===fileVersion&&fileVersion===cacheVersion,`version alignment: ${configVersion} / ${fileVersion} / ${cacheVersion}`);
 
-  const jsText=fs.readdirSync(path.join(root,'v1/js')).filter(x=>x.endsWith('.js')).map(x=>read(path.join('v1/js',x)))).join('\n');
+  const jsText=fs.readdirSync(path.join(root,'v1/js')).filter(x=>x.endsWith('.js')).map(x=>read(path.join('v1/js',x))).join('\n');
   assert(!jsText.includes('plant-alignment.js'),'no missing plant-alignment dependency');
   assert(!/data:image\//i.test(jsText),'no production image data embedded in JavaScript');
 
