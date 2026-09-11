@@ -57,3 +57,7 @@ Telemetry is automatic in the current app and has no opt-out. It sends a random 
 See [AUDIT-1.9.1.md](AUDIT-1.9.1.md) for fixes, sprite repair provenance, validation limits, and prioritized follow-up work. The validator now checks image integrity and service-worker behavior as well as domain logic. Use Node 22.15+ or 24.
 
 For full raster decoding checks, install Pillow and run `python scripts/validate-images.py`; GitHub Actions also runs this check.
+
+## 1.9.2 sprite correction
+
+See [the sprite visual audit](SPRITE-AUDIT-1.9.2.md) for all 24 active stages, historical asset findings, source-preserving artwork rendering, and limits of verification.

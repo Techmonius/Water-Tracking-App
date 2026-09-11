@@ -60,6 +60,18 @@
         period > 0
           ? (-period * (i / (Math.max(1, layers.length) * 2))).toFixed(3) + "s"
           : "0s";
+      if (item.artwork) {
+        const art = P.artElement(item, "flowerPulse flowerAssetPulse", "");
+        art.setAttribute("aria-hidden", "true");
+        art.style.transformOrigin = item.cx + "% " + item.cy + "%";
+        art.style.setProperty("--flower-scale", String(item.scale || 1.06));
+        if (period > 0) {
+          art.style.setProperty("--flower-period", period.toFixed(3) + "s");
+          art.style.animationDelay = delay;
+        } else art.classList.add("flowerStill");
+        layer.appendChild(art);
+        return;
+      }
       if (item.box) {
         const b = item.box,
           wrap = document.createElement("span"),
@@ -144,11 +156,9 @@
         moisture +
         '" data-moisture="' +
         moisture +
-        '"><img class="plantConceptArt" src="' +
-        p.asset +
-        '" alt="' +
-        p.name +
-        ' plant"><div class="flowerPulseLayer" aria-hidden="true"></div><div class="plantEffectLayer" aria-hidden="true">' +
+        '">' +
+        P.artMarkup(p.asset, p.artwork, "plantConceptArt", p.name + " plant") +
+        '<div class="flowerPulseLayer" aria-hidden="true"></div><div class="plantEffectLayer" aria-hidden="true">' +
         dropletMarkup(moisture) +
         '</div></div><div><p class="plantCondition">' +
         p.moistureText +

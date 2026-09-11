@@ -1,0 +1,329 @@
+[
+  {
+    "sha": "b2bbdb7a9339f5d7572d28212dc0a887e89a231d",
+    "path": "v1/assets/plants/monstera/stage-1.png",
+    "size": [
+      64,
+      64
+    ],
+    "decode": "ok"
+  },
+  {
+    "sha": "be44e5b6237c663d1cb773b2fda2525451ec5083",
+    "path": "v1/assets/plants/monstera/stage-2.png",
+    "size": [
+      128,
+      128
+    ],
+    "decode": "ok"
+  },
+  {
+    "sha": "608860ebec04b011edd5b6cc5817c45876816505",
+    "path": "v1/assets/plants/monstera/stage-3.png",
+    "size": [
+      128,
+      128
+    ],
+    "decode": "ok"
+  },
+  {
+    "sha": "adb94e858f4e209fa58545267e6f8699602d092d",
+    "path": "v1/assets/plants/monstera/stage-4.png",
+    "size": [
+      64,
+      64
+    ],
+    "decode": "ok"
+  },
+  {
+    "sha": "1e8b87bee0c8a9fdbbd46cd26651e48c7a74aa97",
+    "path": "v1/assets/plants/monstera/stage-5.png",
+    "size": [
+      64,
+      64
+    ],
+    "decode": "ok"
+  },
+  {
+    "sha": "230f51e29aeb54cf6328f71aaf278e32daea9d12",
+    "path": "v1/assets/plants/monstera/stage-6.png",
+    "size": [
+      64,
+      64
+    ],
+    "decode": "ok"
+  },
+  {
+    "sha": "dc575f5198fb8f02394e1f40c4d0e181df893900",
+    "path": "v1/assets/plants/monstera/stage-7.png",
+    "size": [
+      64,
+      64
+    ],
+    "decode": "ok"
+  },
+  {
+    "sha": "ec5f35e7f3558d208103669511aa176983edb379",
+    "path": "v1/assets/plants/monstera/stage-8.png",
+    "size": [
+      1254,
+      1254
+    ],
+    "decode": "ok"
+  },
+  {
+    "sha": "7b2546958445103533d101f3f69b717565b9eb2a",
+    "path": "v1/assets/plants/overlays/stage-8-flower-1.webp",
+    "size": [
+      128,
+      128
+    ],
+    "decode": "ok"
+  },
+  {
+    "sha": "475246cd8a7e83cd69771b5de6756dcec2f988f6",
+    "path": "v1/assets/plants/overlays/stage-8-flower-2.webp",
+    "size": [
+      128,
+      128
+    ],
+    "decode": "ok"
+  },
+  {
+    "sha": "fa181d4ab2da4785c39ee603cd7a190b13764b38",
+    "path": "v1/assets/plants/overlays/stage-8-flower-3.webp",
+    "size": [
+      128,
+      128
+    ],
+    "decode": "ok"
+  },
+  {
+    "sha": "6c7f1a93284c624195ed7673235c233297366c96",
+    "path": "v1/assets/plants/overlays/stage-8-flower-5.webp",
+    "size": [
+      128,
+      128
+    ],
+    "decode": "ok"
+  },
+  {
+    "sha": "6117e5490d7b90ad2910e7ea549d0f970f0c7efb",
+    "path": "v1/assets/plants/stage-1.webp",
+    "size": [
+      128,
+      128
+    ],
+    "decode": "ok"
+  },
+  {
+    "sha": "dab02ebde4e78947aefd0a29f9e5c3b1ee246ecf",
+    "path": "v1/assets/plants/stage-2.webp",
+    "size": [
+      128,
+      128
+    ],
+    "decode": "ok"
+  },
+  {
+    "sha": "fc20ba7278bb4dd51d37978adace5492437f0da1",
+    "path": "v1/assets/plants/stage-3.webp",
+    "size": [
+      128,
+      128
+    ],
+    "decode": "ok"
+  },
+  {
+    "sha": "e8a155add43107b0389b5c5c25131d1a43a5ef8c",
+    "path": "v1/assets/plants/stage-4.webp",
+    "size": [
+      128,
+      128
+    ],
+    "decode": "ok"
+  },
+  {
+    "sha": "dbf8ddcf462f9a2eec398e339de6452c5d6cefee",
+    "path": "v1/assets/plants/stage-5.webp",
+    "size": [
+      128,
+      128
+    ],
+    "decode": "ok"
+  },
+  {
+    "sha": "2b75380832261cfb2563f04f01a772adfb4bab8b",
+    "path": "v1/assets/plants/stage-6.webp",
+    "size": [
+      128,
+      128
+    ],
+    "decode": "ok"
+  },
+  {
+    "sha": "92590f49473966ebdb169c461a98804f55913ac4",
+    "path": "v1/assets/plants/stage-7.webp",
+    "size": [
+      128,
+      128
+    ],
+    "decode": "ok"
+  },
+  {
+    "sha": "46969c9c6601dfd3132829e131ff7d6520d323a2",
+    "path": "v1/assets/plants/stage-8.webp",
+    "size": [
+      128,
+      128
+    ],
+    "decode": "ok"
+  },
+  {
+    "sha": "766b1b88ebcfee0734fa2da662573073af56724f",
+    "path": "v1/assets/plants/sunflower/overlays/stage-6-flower.png",
+    "size": [
+      128,
+      128
+    ],
+    "decode": "ok"
+  },
+  {
+    "sha": "c4af73becc0b92dd88c341ef16805e7f0b3f852b",
+    "path": "v1/assets/plants/sunflower/overlays/stage-7-flower.png",
+    "size": [
+      128,
+      128
+    ],
+    "decode": "ok"
+  },
+  {
+    "sha": "0ab7849fb43b2329d84bfb4a3224e0faf212d7a3",
+    "path": "v1/assets/plants/sunflower/overlays/stage-8-flower.png",
+    "size": [
+      128,
+      128
+    ],
+    "decode": "ok"
+  },
+  {
+    "sha": "c20f563e2356128c2c0593a60941048bf1ec02e6",
+    "path": "v1/assets/plants/sunflower/stage-1.png",
+    "size": [
+      128,
+      128
+    ],
+    "decode": "ok"
+  },
+  {
+    "sha": "cf579e6d97095fb7fef5e626a31a9ad10561db32",
+    "path": "v1/assets/plants/sunflower/stage-2.png",
+    "size": [
+      128,
+      128
+    ],
+    "decode": "ok"
+  },
+  {
+    "sha": "114094821a4fdec84660c08ca06de11ae7f5789d",
+    "path": "v1/assets/plants/sunflower/stage-3.png",
+    "size": [
+      128,
+      128
+    ],
+    "decode": "ok"
+  },
+  {
+    "sha": "0d1a59094863ef7d9e8d6d63a5e89a86b7501383",
+    "path": "v1/assets/plants/sunflower/stage-4.png",
+    "size": [
+      128,
+      128
+    ],
+    "decode": "ok"
+  },
+  {
+    "sha": "5a112ec608cd5c5ed21f4fcf8798aa5fe8a1f7f1",
+    "path": "v1/assets/plants/sunflower/stage-5.png",
+    "size": [
+      128,
+      128
+    ],
+    "decode": "ok"
+  },
+  {
+    "sha": "01126f9022eaa9c6c72ee69ede77b9574eaff6a3",
+    "path": "v1/assets/plants/sunflower/stage-6.png",
+    "size": [
+      128,
+      128
+    ],
+    "decode": "ok"
+  },
+  {
+    "sha": "8d6bd4d429a6739673805d89a9faea9b7a2310ec",
+    "path": "v1/assets/plants/sunflower/stage-7.png",
+    "size": [
+      128,
+      128
+    ],
+    "decode": "ok"
+  },
+  {
+    "sha": "d9a0855c9c50b0472d7e867e5330a31ed43cc51c",
+    "path": "v1/assets/plants/sunflower/stage-8.png",
+    "size": [
+      128,
+      128
+    ],
+    "decode": "ok"
+  },
+  {
+    "sha": "a6b9cc50fe7f83e8f1722371caa4534b606185d9",
+    "path": "v1/assets/plants/monstera/stage-1.png",
+    "size": [
+      64,
+      64
+    ],
+    "decode": "ok"
+  },
+  {
+    "sha": "0a5c9f29bbfdb672b0f19d96f2db4b1cc7f76f2b",
+    "path": "v1/assets/plants/monstera/stage-2.png",
+    "decode": "unrecognized data stream contents when reading image file"
+  },
+  {
+    "sha": "add17aae0bf8062264223e171f171425dbdffbfe",
+    "path": "v1/assets/plants/monstera/stage-3.png",
+    "decode": "unrecognized data stream contents when reading image file"
+  },
+  {
+    "sha": "b45e256d219bcc203dae8e9a59f119f6508af404",
+    "path": "v1/assets/plants/monstera/stage-8.png",
+    "decode": "unrecognized data stream contents when reading image file"
+  },
+  {
+    "sha": "8bacbb3f8c4bbbf6de3a78fa613325303053c0ee",
+    "path": "v1/assets/plants/overlays/stage-8-flower-4.webp",
+    "decode": "failed to read next frame"
+  },
+  {
+    "sha": "311c8dd0658759f372c9be9a2065c327fdb1a203",
+    "path": "v1/assets/plants/overlays/stage-8-flower-1.webp",
+    "decode": "cannot identify image file <_io.BytesIO object at 0x7fb50da13380>"
+  },
+  {
+    "sha": "444f9928ebe200df1a8d3f7ebcb5752f27cfe349",
+    "path": "v1/assets/plants/stage-8.webp",
+    "size": [
+      128,
+      128
+    ],
+    "decode": "ok"
+  },
+  {
+    "sha": "be1e191825812241bff37afc4cfd1678f2df3d15",
+    "path": "v1/assets/plants/masks/stage-1-plant-mask.png",
+    "decode": "cannot identify image file <_io.BytesIO object at 0x7fb50da13470>"
+  }
+]

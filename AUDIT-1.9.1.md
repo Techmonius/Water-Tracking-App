@@ -47,3 +47,7 @@ Direct file decoding is also checked with `python scripts/validate-images.py` (P
 8. **Compatibility entry points:** keep old redirect URLs working; remove remaining unused assets only after checking historical clients and references.
 
 A framework rewrite is not justified for this app. The current domain/module split is sufficient; prioritize data correctness and device tests over adding dependencies.
+
+## Correction after visual review
+
+The sprite claims above did not establish visual correctness. The user subsequently reported transparent holes in the sunflower sprout. The broader visual audit found additional bad crops and missing interior pixels. See [SPRITE-AUDIT-1.9.2.md](SPRITE-AUDIT-1.9.2.md) for the superseding scope, fixes and visual evidence.

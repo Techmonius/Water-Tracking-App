@@ -1,13 +1,9 @@
-// Plant 1 is the renderer reference. Plants 2+ use standalone raster stages and raster-only animation overlays.
+// Approved raster artwork is rendered directly through explicit SVG clipping masks.
 (function () {
   const flowerLayer = (asset, cx, cy, box = null, scale = 1.018) =>
     Object.freeze({ asset, cx, cy, box, scale });
   const flowerAnimation = (layers) =>
     Object.freeze({ layers: Object.freeze(layers) });
-  const raster = (plant, stage) =>
-    `v1/assets/plants/${plant}/stage-${stage}.png`;
-  const overlay = (plant, stage, name) =>
-    `v1/assets/plants/${plant}/overlays/stage-${stage}-${name}.png`;
   const STARTER_STAGES = [
     {
       name: "Seed",
@@ -43,19 +39,13 @@
       name: "First Flower",
       minGoalDays: 21,
       asset: "v1/assets/plants/stage-6.webp",
-      flowerAnimation: flowerAnimation([
-        flowerLayer("v1/assets/plants/overlays/stage-6-flower-1.svg", 50, 27),
-      ]),
+      flowerAnimation: null,
     },
     {
       name: "More Flowers",
       minGoalDays: 30,
       asset: "v1/assets/plants/stage-7.webp",
-      flowerAnimation: flowerAnimation([
-        flowerLayer("v1/assets/plants/overlays/stage-7-flower-1.svg", 32, 34),
-        flowerLayer("v1/assets/plants/overlays/stage-7-flower-2.svg", 50, 24),
-        flowerLayer("v1/assets/plants/overlays/stage-7-flower-3.svg", 68, 31),
-      ]),
+      flowerAnimation: null,
     },
     {
       name: "Full Bloom",
@@ -83,13 +73,7 @@
           { x: 46.09375, y: 21.09375, w: 26.5625, h: 24.21875 },
           1.08,
         ),
-        flowerLayer(
-          "v1/assets/plants/overlays/stage-8-flower-4.svg",
-          54.86,
-          51.61,
-          { x: 57.8125, y: 28.90625, w: 24.21875, h: 22.65625 },
-          1.08,
-        ),
+        null, // Added from the intact base artwork below.
         flowerLayer(
           "v1/assets/plants/overlays/stage-8-flower-5.webp",
           48.25,
@@ -100,130 +84,134 @@
       ]),
     },
   ];
-  const SUNFLOWER_STAGES = [
-    {
-      name: "Seed",
-      minGoalDays: 0,
-      asset: raster("sunflower", 1),
-      flowerAnimation: null,
+  const sourceStages = (id, names, days) =>
+    names.map((name, index) => ({
+      name,
+      minGoalDays: days[index],
+      ...window.WT_V1_ARTWORK[id][index],
+      flowerAnimation: window.WT_V1_ARTWORK[id][index].flowerAnimation || null,
+    }));
+  const SUNFLOWER_STAGES = sourceStages(
+    "sunflower",
+    [
+      "Seed",
+      "Sprout",
+      "Young Plant",
+      "Taller Plant",
+      "Bud Forms",
+      "Flower Opening",
+      "Full Sunflower",
+      "Sun Facing",
+    ],
+    [0, 4, 8, 14, 20, 26, 32, 36],
+  );
+  const MONSTERA_STAGES = sourceStages(
+    "monstera",
+    [
+      "Seed",
+      "Sprout",
+      "Young Plant",
+      "Growing Stronger",
+      "Large Leaves",
+      "Mature Plant",
+      "Almost Full",
+      "Full Monstera",
+    ],
+    [0, 4, 8, 13, 19, 26, 33, 40],
+  );
+  const starterCrop = (index, mask) => ({
+    asset: STARTER_STAGES[index].asset,
+    artwork: {
+      viewBox: [0, 0, 128, 128],
+      sourceWidth: 128,
+      sourceHeight: 128,
+      mask,
     },
-    {
-      name: "Sprout",
-      minGoalDays: 4,
-      asset: raster("sunflower", 2),
-      flowerAnimation: null,
-    },
-    {
-      name: "Young Plant",
-      minGoalDays: 8,
-      asset: raster("sunflower", 3),
-      flowerAnimation: null,
-    },
-    {
-      name: "Taller Plant",
-      minGoalDays: 14,
-      asset: raster("sunflower", 4),
-      flowerAnimation: null,
-    },
-    {
-      name: "Bud Forms",
-      minGoalDays: 20,
-      asset: raster("sunflower", 5),
-      flowerAnimation: null,
-    },
-    {
-      name: "Flower Opening",
-      minGoalDays: 26,
-      asset: raster("sunflower", 6),
-      flowerAnimation: flowerAnimation([
-        flowerLayer(
-          overlay("sunflower", 6, "flower"),
-          49.21,
-          52.51,
-          { x: 35.15625, y: 2.34375, w: 32.03125, h: 29.6875 },
-          1.06,
-        ),
-      ]),
-    },
-    {
-      name: "Full Sunflower",
-      minGoalDays: 32,
-      asset: raster("sunflower", 7),
-      flowerAnimation: flowerAnimation([
-        flowerLayer(
-          overlay("sunflower", 7, "flower"),
-          48.07,
-          51.85,
-          { x: 31.25, y: 2.34375, w: 42.1875, h: 39.84375 },
-          1.07,
-        ),
-      ]),
-    },
-    {
-      name: "Sun Facing",
-      minGoalDays: 36,
-      asset: raster("sunflower", 8),
-      flowerAnimation: flowerAnimation([
-        flowerLayer(
-          overlay("sunflower", 8, "flower"),
-          50.76,
-          54.21,
-          { x: 27.34375, y: 2.34375, w: 46.09375, h: 42.96875 },
-          1.08,
-        ),
-      ]),
-    },
-  ];
-  const MONSTERA_STAGES = [
-    {
-      name: "Seed",
-      minGoalDays: 0,
-      asset: raster("monstera", 1),
-      flowerAnimation: null,
-    },
-    {
-      name: "Sprout",
-      minGoalDays: 4,
-      asset: raster("monstera", 2),
-      flowerAnimation: null,
-    },
-    {
-      name: "Young Plant",
-      minGoalDays: 8,
-      asset: raster("monstera", 3),
-      flowerAnimation: null,
-    },
-    {
-      name: "Growing Stronger",
-      minGoalDays: 13,
-      asset: raster("monstera", 4),
-      flowerAnimation: null,
-    },
-    {
-      name: "Large Leaves",
-      minGoalDays: 19,
-      asset: raster("monstera", 5),
-      flowerAnimation: null,
-    },
-    {
-      name: "Mature Plant",
-      minGoalDays: 26,
-      asset: raster("monstera", 6),
-      flowerAnimation: null,
-    },
-    {
-      name: "Almost Full",
-      minGoalDays: 33,
-      asset: raster("monstera", 7),
-      flowerAnimation: null,
-    },
-    {
-      name: "Full Monstera",
-      minGoalDays: 40,
-      asset: raster("monstera", 8),
-      flowerAnimation: null,
-    },
-  ];
+  });
+  // Exclude the detached two-pixel scan line outside the stage-7 plant.
+  STARTER_STAGES[6].artwork = starterCrop(6, "M0 0h120v128H0z").artwork;
+  function croppedFlower(index, mask, cx, cy, scale = 1.06) {
+    return {
+      ...starterCrop(index, mask),
+      cx: (cx / 128) * 100,
+      cy: (cy / 128) * 100,
+      scale,
+    };
+  }
+  STARTER_STAGES[5].flowerAnimation = {
+    layers: [croppedFlower(5, "M44 2h34v39H44z", 61, 21)],
+  };
+  STARTER_STAGES[6].flowerAnimation = {
+    layers: [
+      croppedFlower(6, "M7 45h27v26H7z", 21, 57),
+      croppedFlower(6, "M31 18h30v29H31z", 46, 33),
+      croppedFlower(6, "M60 28h31v31H60z", 75, 42),
+    ],
+  };
+  STARTER_STAGES[7].flowerAnimation = {
+    layers: STARTER_STAGES[7].flowerAnimation.layers.map((layer, index) =>
+      index === 3
+        ? croppedFlower(
+            7,
+            "M87 39h9v5h6v7h3v8h-7v6H87v-5h-4v-9h3v-6h1z",
+            91,
+            52,
+          )
+        : layer,
+    ),
+  };
+  let artSerial = 0;
+  const attr = (value) =>
+    String(value).replace(
+      /[&<>"']/g,
+      (c) =>
+        ({
+          "&": "&amp;",
+          "<": "&lt;",
+          ">": "&gt;",
+          '"': "&quot;",
+          "'": "&#39;",
+        })[c],
+    );
+  function artMarkup(asset, artwork, className = "", label = "") {
+    if (!artwork)
+      return (
+        '<img class="' +
+        attr(className) +
+        '" src="' +
+        attr(asset) +
+        '" alt="' +
+        attr(label) +
+        '">'
+      );
+    const id = "plant-clip-" + ++artSerial;
+    return (
+      '<svg xmlns="http://www.w3.org/2000/svg" class="' +
+      attr(className) +
+      '" viewBox="' +
+      artwork.viewBox.join(" ") +
+      '" role="img" aria-label="' +
+      attr(label) +
+      '"><defs><clipPath id="' +
+      id +
+      '" clipPathUnits="userSpaceOnUse"><path d="' +
+      artwork.mask +
+      '"/></clipPath></defs><image href="' +
+      attr(asset) +
+      '" width="' +
+      artwork.sourceWidth +
+      '" height="' +
+      artwork.sourceHeight +
+      '" clip-path="url(#' +
+      id +
+      ')"/></svg>'
+    );
+  }
+  function artElement(stage, className = "", label = "") {
+    const holder = document.createElement("div");
+    holder.innerHTML = artMarkup(stage.asset, stage.artwork, className, label);
+    return holder.firstElementChild;
+  }
   const CATALOG = Object.freeze({
     starter_flower: Object.freeze({
       id: "starter_flower",
@@ -362,6 +350,8 @@
     return next;
   }
   window.WT_V1_PLANTS = {
+    artMarkup,
+    artElement,
     CATALOG,
     DEFAULT_ID,
     definition,

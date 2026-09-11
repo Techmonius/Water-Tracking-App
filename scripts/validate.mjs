@@ -155,6 +155,7 @@ function staticReferences() {
 function plantAssets() {
   const context = { window: {} };
   vm.createContext(context);
+  vm.runInContext(read("v1/js/artwork.js"), context);
   vm.runInContext(read("v1/js/plants.js"), context, { filename: "plants.js" });
   const catalog = context.window.WT_V1_PLANTS?.CATALOG || {};
   assert(Object.keys(catalog).length >= 3, "plant catalog loads");
@@ -228,6 +229,7 @@ function makeDomainContext() {
     "v1/js/storage.js",
     "v1/js/hydration.js",
     "v1/js/stats.js",
+    "v1/js/artwork.js",
     "v1/js/plants.js",
   ])
     vm.runInContext(read(file), context, { filename: file });

@@ -1,5 +1,5 @@
 window.WT_V1_CONFIG = Object.freeze({
-  appVersion: "1.9.1",
+  appVersion: "1.9.2",
   schemaVersion: 2,
   storageKey: "waterTracker_v2",
   legacyKeys: Object.freeze({

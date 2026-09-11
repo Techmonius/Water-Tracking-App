@@ -70,18 +70,16 @@
       const card = document.createElement("button");
       card.type = "button";
       card.className = "gardenPlantCard";
-      const img = document.createElement("img");
-      img.className = "gardenPlantArt";
-      img.alt = def.name;
-      img.src = finalStage.asset;
+      const img = P.artElement(finalStage, "gardenPlantArt", def.name);
       const strong = document.createElement("strong");
       strong.textContent = def.name;
       const small = document.createElement("small");
       small.textContent = when;
       card.append(img, strong, small);
       card.onclick = () => {
-        $("gardenDetailArt").src = finalStage.asset;
-        $("gardenDetailArt").alt = def.name;
+        const detailArt = P.artElement(finalStage, "gardenDetailArt", def.name);
+        detailArt.id = "gardenDetailArt";
+        $("gardenDetailArt").replaceWith(detailArt);
         $("gardenDetailName").textContent = def.name;
         $("gardenDetailMeta").textContent =
           (rec.completedAt ? "Completed " + when + " · " : "") +

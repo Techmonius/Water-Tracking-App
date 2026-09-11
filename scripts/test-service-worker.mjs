@@ -50,8 +50,8 @@ export async function testServiceWorker() {
       open: async () => cache,
       keys: async () => [
         "unrelated-cache",
-        "water-tracker-1.9.0",
         "water-tracker-1.9.1",
+        "water-tracker-1.9.2",
       ],
       delete: async (key) => removed.push(key),
       match: async (key) => entries.get(key),
@@ -75,11 +75,11 @@ export async function testServiceWorker() {
   rejectInstall = false;
   await lifecycle("install");
   assert.equal(skipped, 0, "new release must wait for explicit activation");
-  assert(core.includes("./v1/assets/plants/monstera/stage-8.png"));
+  assert(core.includes("./v1/assets/plants/approved/sunflower.jpeg"));
   listeners.message({ data: { type: "SKIP_WAITING" } });
   assert.equal(skipped, 1);
   await lifecycle("activate");
-  assert.deepEqual(removed, ["water-tracker-1.9.0"]);
+  assert.deepEqual(removed, ["water-tracker-1.9.1"]);
   assert.equal(claimed, 1);
   assert.equal(navigated.length, 1);
   async function request(path, mode = "cors") {

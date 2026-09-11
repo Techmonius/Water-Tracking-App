@@ -646,6 +646,7 @@
       plantId: life.plantId,
       plantName: life.plant.name,
       asset: life.stage.asset,
+      artwork: life.stage.artwork || null,
       flowerAnimation: life.stage.flowerAnimation || null,
       hasFlowers: Boolean(life.stage.flowerAnimation),
       durationGoalDays: life.plant.durationGoalDays,

@@ -1,19 +1,14 @@
-# Plant asset standard
+# Plant artwork standard
 
-Plant 1 is the rendering and behavior reference and its proven artwork should not be reworked just to change formats. Plants 2 and later use the clean asset layout below.
+Production artwork stays raster. Sunflower and Monstera use the user's original JPEG sources in `approved/`, rendered through inline SVG clipping masks. SVG supplies clipping geometry; it does not redraw or vectorize the art.
 
-## Folder layout
+- `scripts/build-artwork-masks.py` builds `v1/js/artwork.js` from the approved source images.
+- Each stage has a bounded crop, a shared ground line within its species, and a mask that removes light page backgrounds while retaining dark subject pixels.
+- Animated flower layers use the same source, coordinate space and ground line as their base.
+- The main card and both garden views use `WT_V1_PLANTS.artMarkup/artElement`.
+- Starter Flower retains its raster files, with display clipping for the detached stage-7 line and flower-only overlays.
+- Never embed raster bytes in production JavaScript, redraw approved art, or use file existence as evidence of visual correctness.
+- Every production source must be precached. Version/cache numbers change together.
+- Run both validators and inspect every active stage/overlay composition before claiming a complete sprite audit.
 
-- Base stages: `v1/assets/plants/<plant-id>/stage-1.png` through `stage-8.png`
-- Animated parts only: `v1/assets/plants/<plant-id>/overlays/stage-<n>-<part>.png`
-
-## Rules
-
-1. Extract from approved concept art without redrawing or vectorizing it.
-2. Keep every base stage as a complete, static raster sprite.
-3. Use transparent raster overlays containing only the pixels intended to animate.
-4. Pot, soil, stems, and non-animated foliage stay in the base sprite.
-5. Moisture filters and water droplets remain renderer-level effects.
-6. Never embed production image data in JavaScript.
-7. Add all new raster assets to the service-worker cache and bump app/cache versions together.
-8. Prepare a complete plant update before publishing it; avoid intermediate production states.
+See `SPRITE-AUDIT-1.9.2.md` for findings, previews, source provenance and verification limits.
