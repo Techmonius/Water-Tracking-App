@@ -51,3 +51,9 @@ The permanent GitHub Actions validation workflow runs the same audit on pushes a
 ## Telemetry and privacy
 
 Telemetry is automatic in the current app and has no opt-out. It sends a random install ID plus compact usage/app summary information; full drink-by-drink history and cup names remain local. See `PRIVACY.md` and `TELEMETRY_SETUP.md`.
+
+## 1.9.1 audit
+
+See [AUDIT-1.9.1.md](AUDIT-1.9.1.md) for fixes, sprite repair provenance, validation limits, and prioritized follow-up work. The validator now checks image integrity and service-worker behavior as well as domain logic. Use Node 22.15+ or 24.
+
+For full raster decoding checks, install Pillow and run `python scripts/validate-images.py`; GitHub Actions also runs this check.

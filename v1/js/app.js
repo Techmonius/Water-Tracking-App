@@ -1,27 +1,633 @@
-(function(){
-  const D=window.WT_V1_DATE,S=window.WT_V1_STORAGE,E=window.WT_V1_ENGAGEMENT,T=window.WT_V1_TELEMETRY,C=window.WT_V1_CONFIG;
-  let state=S.load(),selectedDay=D.dayKey(),editingCup=null,lastTodayTotal=0;
-  const $=id=>document.getElementById(id),esc=v=>String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-  const api=window.WT_V1_HYDRATION.createApi(state,()=>{state=api.getState();render();});
-  function toast(msg,ms=2600){const el=$('toast');el.textContent=msg;el.classList.add('show');clearTimeout(el._t);el._t=setTimeout(()=>el.classList.remove('show'),ms);}
-  function applyTheme(){const t=state.settings.theme;document.body.classList.toggle('dark',t==='dark'||(t==='system'&&matchMedia('(prefers-color-scheme: dark)').matches));}
-  function slosh(){const w=$('water');w.classList.remove('slosh');void w.offsetWidth;w.classList.add('slosh');setTimeout(()=>w.classList.remove('slosh'),650);}
-  function celebrate(){const b=document.createElement('div');b.className='goalBurst';b.innerHTML='<span>🎉</span><strong>Goal reached!</strong><div>You watered your plant and kept your streak alive.</div>';document.body.appendChild(b);navigator.vibrate?.([30,40,30]);for(let i=0;i<28;i++){const d=document.createElement('i');d.className='dot';d.style.left=Math.random()*100+'%';d.style.animationDelay=Math.random()*.25+'s';$('confetti').appendChild(d);setTimeout(()=>d.remove(),1300);}setTimeout(()=>b.remove(),3500);T.track('goal_celebration',{feature:'Engagement'});}
-  function render(){state=api.getState();applyTheme();const today=D.dayKey(),total=api.totalFor(today),goal=api.goalFor(today),pct=goal?Math.round(total/goal*100):0;$('todayTotal').textContent=total;$('todayGoal').textContent=goal;$('water').style.height=Math.min(100,pct)+'%';$('progressText').textContent=pct+'% complete';const earned=E.evaluate(api);renderQuick();renderCups();renderTimeline();renderHistory();renderMonth();renderStats();renderEngagement();renderPlantMeta();earned.forEach((a,i)=>setTimeout(()=>toast(a.icon+' '+a.rarity.toUpperCase()+' · '+a.name+' +'+a.xp+' XP',3400),i*550));if(lastTodayTotal<goal&&total>=goal&&!state.engagement.celebrations.goalByDate[today]){const stamp=Date.now();state.engagement.celebrations.goalByDate[today]=stamp;S.update(latest=>{latest.engagement.celebrations.goalByDate[today]=stamp;});celebrate();}lastTodayTotal=total;}
-  function renderQuick(){const box=$('quickButtons');box.innerHTML='';[8,12,16,20,30].forEach(oz=>{const b=document.createElement('button');b.className='quick';b.textContent='+'+oz;b.onclick=()=>add(oz,'Quick add');box.appendChild(b);});const custom=document.createElement('button');custom.className='quick';custom.textContent='+ Custom';custom.onclick=()=>{$('amountInput').value='';$('amountDialog').showModal();setTimeout(()=>$('amountInput').focus(),40);};box.appendChild(custom);}
-  function renderCups(){const box=$('cupButtons');box.innerHTML='';state.cups.forEach(c=>{const b=document.createElement('button');b.className='cup';b.innerHTML='+'+esc(c.oz)+'<small>'+esc(c.name)+'</small>';b.onclick=()=>add(c.oz,c.name);b.oncontextmenu=e=>{e.preventDefault();openCup(c.id);};box.appendChild(b);});}
-  function renderTimeline(){const box=$('timeline'),list=[...api.drinksFor()].reverse();box.innerHTML=list.length?'':'<div class="drink">No drinks yet</div>';list.forEach(d=>{const r=document.createElement('div');r.className='drink';r.innerHTML='<span>'+D.formatTime(d.at)+' · '+esc(d.label)+'</span><strong>+'+esc(d.oz)+' oz</strong>';box.appendChild(r);});}
-  function renderHistory(){const box=$('history');box.innerHTML='';let sum=0;for(let i=6;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);const k=D.dayKey(d),oz=api.totalFor(k),g=api.goalFor(k),pct=g?Math.round(oz/g*100):0;sum+=oz;const b=document.createElement('button');b.className='day'+(oz>=g?' met':pct>=80?' close':'')+(k===D.dayKey()?' today':'');b.innerHTML='<div><div class="dow">'+d.toLocaleDateString([],{weekday:'short'})+'</div><div class="oz">'+oz+'</div><div class="pct">'+pct+'%</div></div>';b.onclick=()=>openDay(k);box.appendChild(b);}$('weeklyAverage').textContent='Avg '+Math.round(sum/7)+' oz';}
-  function renderMonth(){const box=$('monthGrid'),now=new Date(),y=now.getFullYear(),m=now.getMonth(),first=new Date(y,m,1),last=new Date(y,m+1,0),today=D.dayKey();box.innerHTML='';for(let i=0;i<first.getDay();i++)box.appendChild(document.createElement('div'));for(let n=1;n<=last.getDate();n++){const d=new Date(y,m,n),k=D.dayKey(d),oz=api.totalFor(k),g=api.goalFor(k),future=k>today,b=document.createElement('button');b.className='monthCell'+(oz>=g?' met':oz>0?' partial':'')+(k===today?' today':'')+(future?' future':'');b.innerHTML='<span class="monthDay">'+n+'</span>';b.disabled=future;if(!future)b.onclick=()=>openDay(k);box.appendChild(b);}}
-  function renderStats(){const s=window.WT_V1_STATS.calculate(api),rows=[['Lifetime',Math.round(s.lifetimeOz)+' oz'],['Gallons',s.lifetimeGallons.toFixed(1)],['Days tracked',s.daysTracked],['Goal days',s.goalDays],['Goal completion',Math.round(s.completionRate)+'%'],['Current streak',s.currentStreak],['Best streak',s.bestStreak],['Average/day',Math.round(s.averageDailyOz)+' oz'],['Average first drink',s.averageFirstDrinkTime],['Average goal time',s.averageGoalTime],['Favorite cup',s.favoriteLabel||'—'],['Most common hour',s.mostCommonHour||'—']];$('stats').innerHTML=rows.map(r=>'<div class="stat"><div class="muted">'+r[0]+'</div><strong>'+r[1]+'</strong></div>').join('');}
-  function renderEngagement(){const lvl=E.level(api),s=window.WT_V1_STATS.calculate(api),wins=E.todayWins(api),badges=E.allBadges(api),collected=badges.filter(b=>b.count>0).length,groups={};badges.forEach(b=>(groups[b.category]||(groups[b.category]=[])).push(b));$('levelText').textContent='Level '+lvl.level+' · '+lvl.xp+' XP';$('levelFill').style.width=Math.round(lvl.progress/lvl.next*100)+'%';$('progressSummary').textContent=collected+' / '+badges.length+' badges · '+Math.round(s.lifetimeOz)+' lifetime oz · '+s.goalDays+' goal days';$('todayWins').innerHTML=wins.slice(0,10).map(w=>'<div class="winBadge '+(w.earned?'earned':'locked')+'"><span class="winBadgeIcon">'+w.icon+'</span><span class="winBadgeName">'+w.name+'</span><span class="winBadgeState">'+(w.earned?'✓ Earned':'Not yet')+'</span></div>').join('');$('badgeList').innerHTML='<div class="badgeSummary"><strong>'+collected+' / '+badges.length+' collected</strong><span>'+lvl.xp+' total XP</span></div>'+Object.keys(groups).map(category=>'<section class="badgeCategory"><h3>'+esc(category)+'</h3>'+groups[category].map(b=>'<div class="badgeRow rarity-'+b.rarity+' '+(b.count?'earned':'locked')+'"><span class="badgeIcon">'+(b.count?b.icon:'❔')+'</span><span class="badgeCopy"><strong>'+b.name+'</strong><small>'+b.rarity.toUpperCase()+' · '+b.xp+' XP · '+b.type+'</small><small>'+b.description+(b.firstEarnedAt?' · First earned '+new Date(b.firstEarnedAt).toLocaleDateString():'')+'</small></span><span class="badgeCount">×'+b.count+'</span></div>').join('')+'</section>').join('');}
-  function renderPlantMeta(){const p=E.plant(api);$('plantName').textContent=p.name;window.dispatchEvent(new CustomEvent('wt-plant-render',{detail:{reason:'data-change'}}));}
-  function add(oz,label,key=D.dayKey()){try{const r=api.addDrink(oz,label,key);navigator.vibrate?.(20);if(key===D.dayKey())slosh();toast('Added '+oz+' oz');T.track('drink_logged',{feature:'Logging',amountOz:Number(oz),mode:key===D.dayKey()?'today':'previous_day'});if(key!==D.dayKey())openDay(key);return r;}catch(e){alert(e.message);}}
-  function openDay(key){if(key>D.dayKey()){toast('Future days cannot be edited.');return;}selectedDay=key;const d=D.dateFromKey(key);$('dayTitle').textContent=d.toLocaleDateString([],{weekday:'long',month:'short',day:'numeric'})+' · '+api.totalFor(key)+'/'+api.goalFor(key)+' oz';const box=$('dayList'),list=[...api.drinksFor(key)].reverse();box.innerHTML=list.length?'':'<div class="drink">No drinks logged</div>';list.forEach(x=>{const r=document.createElement('div');r.className='drink';r.innerHTML='<span>'+D.formatTime(x.at)+' · '+esc(x.label)+'</span><span><strong>+'+x.oz+' oz</strong> <button class="ghost danger" data-id="'+x.id+'">Delete</button></span>';box.appendChild(r);});box.querySelectorAll('[data-id]').forEach(b=>b.onclick=()=>{if(confirm('Delete this drink?'))api.deleteDrink(key,b.dataset.id);openDay(key);});$('dayDialog').showModal();}
-  function openCup(id=null){editingCup=id;const c=state.cups.find(x=>x.id===id);$('cupTitle').textContent=c?'Edit Cup':'Add Cup';$('cupName').value=c?.name||'';$('cupOz').value=c?.oz||'';$('deleteCup').hidden=!c;$('cupDialog').showModal();}
-  function openSettings(){$('goalMode').value=state.settings.goalMode;$('dailyGoal').value=state.settings.dailyGoal;$('weekdayGoal').value=state.settings.weekdayGoal;$('weekendGoal').value=state.settings.weekendGoal;$('birthday').value=state.settings.birthday||'';$('theme').value=state.settings.theme;$('versionText').textContent='Version '+C.appVersion+' · birthday '+(state.settings.birthday?'saved on this device':'not set');$('settingsDialog').showModal();}
-  function importFile(){const i=document.createElement('input');i.type='file';i.accept='application/json';i.onchange=()=>{const f=i.files?.[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{const next=S.importData(r.result);api.replaceState(next);toast('Data imported');}catch(e){alert(e.message);}};r.readAsText(f);};i.click();}
-  $('saveAmountButton').onclick=()=>{const n=Number($('amountInput').value);if(!n||n<1){alert('Enter a valid ounce amount.');return;}$('amountDialog').close();add(n,'Custom amount');};$('undoButton').onclick=()=>{const x=api.undoToday();toast(x?'Undid '+x.oz+' oz':'Nothing to undo');T.track('undo_used',{feature:'Correction'});};$('resetButton').onclick=()=>{if(confirm('Reset today to 0 oz?'))api.resetDay();};$('restoreButton').onclick=()=>toast(api.restoreDay()?'Today restored':'No backup for today');$('addCupButton').onclick=()=>openCup();$('settingsButton').onclick=openSettings;$('badgesButton').onclick=()=>document.querySelector('[data-view="badgesView"]').click();$('saveCup').onclick=()=>{try{api.saveCup({id:editingCup,name:$('cupName').value,oz:$('cupOz').value});$('cupDialog').close();toast('Cup saved');}catch(e){alert(e.message);}};$('deleteCup').onclick=()=>{if(editingCup&&confirm('Delete this cup?')){api.deleteCup(editingCup);$('cupDialog').close();}};
-  $('birthday').addEventListener('change',()=>{const birthday=$('birthday').value||'';try{api.saveSettings({birthday});toast(birthday?'Birthday saved':'Birthday removed');T.track('profile_updated',{feature:'Settings'});$('versionText').textContent='Version '+C.appVersion+' · birthday '+(birthday?'saved on this device':'not set');}catch(e){alert(e.message);}});$('saveSettings').onclick=()=>{const birthday=$('birthday').value||'';try{api.saveSettings({goalMode:$('goalMode').value,dailyGoal:Number($('dailyGoal').value),weekdayGoal:Number($('weekdayGoal').value),weekendGoal:Number($('weekendGoal').value),birthday,theme:$('theme').value});$('settingsDialog').close();toast('Settings saved');T.track('profile_updated',{feature:'Settings'});}catch(e){alert(e.message);}};$('exportButton').onclick=()=>S.exportData(state);$('importButton').onclick=importFile;$('clearButton').onclick=()=>{if(confirm('Reset Water Tracker? This permanently erases hydration history, plant progress, achievements, badge counts, cups, birthday, and settings.'))if(confirm('This cannot be undone unless you exported a backup. Continue?')){S.resetUserData();location.reload();}};$('addPastDrink').onclick=()=>{const n=Number(prompt('Ounces to add:'));if(n)add(n,'Manual edit',selectedDay);};$('resetPastDay').onclick=()=>{if(confirm('Reset this day?')){api.resetDay(selectedDay);openDay(selectedDay);}};
-  $('developerButton').onclick=()=>{const p=E.plant(api),pp=state.plantProgress||{},info=[['Version',C.appVersion],['Schema',C.schemaVersion],['Install ID',T.installId().slice(0,8)],['Birthday',state.settings.birthday||'Not set'],['Stored days',Object.keys(state.days).length],['Permanent badges',Object.keys(state.engagement.permanent).length],['Daily wins',Object.values(state.engagement.daily.counts).reduce((a,b)=>a+b,0)],['Plant ID',p.plantId],['Plant stage',p.name],['Plant goal days',p.goalDays+' / '+p.durationGoalDays],['Plant baseline',pp.startedAtGoalDays||0],['Completion pending',pp.completionPending?'Yes':'No'],['Completed plants',(pp.completedPlants||[]).length],['Mystery seed',pp.nextSeed?'Pending':'None'],['Storage key',C.storageKey]];$('devInfo').innerHTML=info.map(x=>'<div class="badgeRow"><span>'+x[0]+'</span><strong>'+x[1]+'</strong></div>').join('');$('devDialog').showModal();T.track('developer_info_opened',{feature:'Developer'});};document.querySelectorAll('[data-view]').forEach(b=>b.onclick=()=>{document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));$(b.dataset.view).classList.add('active');window.scrollTo(0,0);});const media=matchMedia('(prefers-color-scheme: dark)');media.addEventListener?.('change',applyTheme);applyTheme();lastTodayTotal=api.totalFor();render();T.track('app_opened',{feature:'General',mode:matchMedia('(display-mode: standalone)').matches?'Home Screen':'Browser'});
+(function () {
+  const D = window.WT_V1_DATE,
+    S = window.WT_V1_STORAGE,
+    E = window.WT_V1_ENGAGEMENT,
+    T = window.WT_V1_TELEMETRY,
+    C = window.WT_V1_CONFIG;
+  let state = S.load(),
+    selectedDay = D.dayKey(),
+    editingCup = null,
+    lastTodayTotal = 0;
+  const $ = (id) => document.getElementById(id),
+    esc = (v) =>
+      String(v).replace(
+        /[&<>"']/g,
+        (c) =>
+          ({
+            "&": "&amp;",
+            "<": "&lt;",
+            ">": "&gt;",
+            '"': "&quot;",
+            "'": "&#39;",
+          })[c],
+      );
+  const api = window.WT_V1_HYDRATION.createApi(state, () => {
+    state = api.getState();
+    render();
+  });
+  function toast(msg, ms = 2600) {
+    const el = $("toast");
+    el.textContent = msg;
+    el.classList.add("show");
+    clearTimeout(el._t);
+    el._t = setTimeout(() => el.classList.remove("show"), ms);
+  }
+  let renderedDay = D.dayKey();
+  function refreshFromStorage() {
+    api.refresh();
+    render();
+    window.dispatchEvent(new CustomEvent("wt-details-refresh"));
+  }
+  window.addEventListener("storage", (event) => {
+    if (event.key === C.storageKey || event.key === null) refreshFromStorage();
+  });
+  window.addEventListener("focus", refreshFromStorage);
+  document.addEventListener("visibilitychange", () => {
+    if (!document.hidden) refreshFromStorage();
+  });
+  setInterval(() => {
+    if (D.dayKey() !== renderedDay) refreshFromStorage();
+  }, 30000);
+  function applyTheme() {
+    const t = state.settings.theme;
+    document.body.classList.toggle(
+      "dark",
+      t === "dark" ||
+        (t === "system" && matchMedia("(prefers-color-scheme: dark)").matches),
+    );
+  }
+  function slosh() {
+    const w = $("water");
+    w.classList.remove("slosh");
+    void w.offsetWidth;
+    w.classList.add("slosh");
+    setTimeout(() => w.classList.remove("slosh"), 650);
+  }
+  function celebrate() {
+    const b = document.createElement("div");
+    b.className = "goalBurst";
+    b.innerHTML =
+      "<span>🎉</span><strong>Goal reached!</strong><div>You watered your plant and kept your streak alive.</div>";
+    document.body.appendChild(b);
+    navigator.vibrate?.([30, 40, 30]);
+    for (let i = 0; i < 28; i++) {
+      const d = document.createElement("i");
+      d.className = "dot";
+      d.style.left = Math.random() * 100 + "%";
+      d.style.animationDelay = Math.random() * 0.25 + "s";
+      $("confetti").appendChild(d);
+      setTimeout(() => d.remove(), 1300);
+    }
+    setTimeout(() => b.remove(), 3500);
+    T.track("goal_celebration", { feature: "Engagement" });
+  }
+  function render() {
+    renderedDay = D.dayKey();
+    state = api.getState();
+    applyTheme();
+    const today = D.dayKey(),
+      total = api.totalFor(today),
+      goal = api.goalFor(today),
+      pct = goal ? Math.round((total / goal) * 100) : 0;
+    $("todayTotal").textContent = total;
+    $("todayGoal").textContent = goal;
+    $("water").style.height = Math.min(100, pct) + "%";
+    $("progressText").textContent = pct + "% complete";
+    const earned = E.evaluate(api);
+    renderQuick();
+    renderCups();
+    renderTimeline();
+    renderHistory();
+    renderMonth();
+    renderStats();
+    renderEngagement();
+    renderPlantMeta();
+    earned.forEach((a, i) =>
+      setTimeout(
+        () =>
+          toast(
+            a.icon +
+              " " +
+              a.rarity.toUpperCase() +
+              " · " +
+              a.name +
+              " +" +
+              a.xp +
+              " XP",
+            3400,
+          ),
+        i * 550,
+      ),
+    );
+    if (
+      lastTodayTotal < goal &&
+      total >= goal &&
+      !state.engagement.celebrations.goalByDate[today]
+    ) {
+      const stamp = Date.now();
+      state.engagement.celebrations.goalByDate[today] = stamp;
+      S.update((latest) => {
+        latest.engagement.celebrations.goalByDate[today] = stamp;
+      });
+      celebrate();
+    }
+    lastTodayTotal = total;
+  }
+  function renderQuick() {
+    const box = $("quickButtons");
+    box.innerHTML = "";
+    [8, 12, 16, 20, 30].forEach((oz) => {
+      const b = document.createElement("button");
+      b.className = "quick";
+      b.textContent = "+" + oz;
+      b.onclick = () => add(oz, "Quick add");
+      box.appendChild(b);
+    });
+    const custom = document.createElement("button");
+    custom.className = "quick";
+    custom.textContent = "+ Custom";
+    custom.onclick = () => {
+      $("amountInput").value = "";
+      $("amountDialog").showModal();
+      setTimeout(() => $("amountInput").focus(), 40);
+    };
+    box.appendChild(custom);
+  }
+  function renderCups() {
+    const box = $("cupButtons");
+    box.innerHTML = "";
+    state.cups.forEach((c) => {
+      const b = document.createElement("button");
+      b.className = "cup";
+      b.innerHTML = "+" + esc(c.oz) + "<small>" + esc(c.name) + "</small>";
+      b.onclick = () => add(c.oz, c.name);
+      b.oncontextmenu = (e) => {
+        e.preventDefault();
+        openCup(c.id);
+      };
+      box.appendChild(b);
+    });
+  }
+  function renderTimeline() {
+    const box = $("timeline"),
+      list = [...api.drinksFor()].reverse();
+    box.innerHTML = list.length ? "" : '<div class="drink">No drinks yet</div>';
+    list.forEach((d) => {
+      const r = document.createElement("div");
+      r.className = "drink";
+      r.innerHTML =
+        "<span>" +
+        D.formatTime(d.at) +
+        " · " +
+        esc(d.label) +
+        "</span><strong>+" +
+        esc(d.oz) +
+        " oz</strong>";
+      box.appendChild(r);
+    });
+  }
+  function renderHistory() {
+    const box = $("history");
+    box.innerHTML = "";
+    let sum = 0;
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      const k = D.dayKey(d),
+        oz = api.totalFor(k),
+        g = api.goalFor(k),
+        pct = g ? Math.round((oz / g) * 100) : 0;
+      sum += oz;
+      const b = document.createElement("button");
+      b.className =
+        "day" +
+        (oz >= g ? " met" : pct >= 80 ? " close" : "") +
+        (k === D.dayKey() ? " today" : "");
+      b.innerHTML =
+        '<div><div class="dow">' +
+        d.toLocaleDateString([], { weekday: "short" }) +
+        '</div><div class="oz">' +
+        oz +
+        '</div><div class="pct">' +
+        pct +
+        "%</div></div>";
+      b.onclick = () => openDay(k);
+      box.appendChild(b);
+    }
+    $("weeklyAverage").textContent = "Avg " + Math.round(sum / 7) + " oz";
+  }
+  function renderMonth() {
+    const box = $("monthGrid"),
+      now = new Date(),
+      y = now.getFullYear(),
+      m = now.getMonth(),
+      first = new Date(y, m, 1),
+      last = new Date(y, m + 1, 0),
+      today = D.dayKey();
+    box.innerHTML = "";
+    for (let i = 0; i < first.getDay(); i++)
+      box.appendChild(document.createElement("div"));
+    for (let n = 1; n <= last.getDate(); n++) {
+      const d = new Date(y, m, n),
+        k = D.dayKey(d),
+        oz = api.totalFor(k),
+        g = api.goalFor(k),
+        future = k > today,
+        b = document.createElement("button");
+      b.className =
+        "monthCell" +
+        (oz >= g ? " met" : oz > 0 ? " partial" : "") +
+        (k === today ? " today" : "") +
+        (future ? " future" : "");
+      b.innerHTML = '<span class="monthDay">' + n + "</span>";
+      b.disabled = future;
+      if (!future) b.onclick = () => openDay(k);
+      box.appendChild(b);
+    }
+  }
+  function renderStats() {
+    const s = window.WT_V1_STATS.calculate(api),
+      rows = [
+        ["Lifetime", Math.round(s.lifetimeOz) + " oz"],
+        ["Gallons", s.lifetimeGallons.toFixed(1)],
+        ["Days tracked", s.daysTracked],
+        ["Goal days", s.goalDays],
+        ["Goal completion", Math.round(s.completionRate) + "%"],
+        ["Current streak", s.currentStreak],
+        ["Best streak", s.bestStreak],
+        ["Average/day", Math.round(s.averageDailyOz) + " oz"],
+        ["Average first drink", s.averageFirstDrinkTime],
+        ["Average goal time", s.averageGoalTime],
+        ["Favorite cup", s.favoriteLabel || "—"],
+        ["Most common hour", s.mostCommonHour || "—"],
+      ];
+    $("stats").innerHTML = rows
+      .map(
+        (r) =>
+          '<div class="stat"><div class="muted">' +
+          r[0] +
+          "</div><strong>" +
+          esc(r[1]) +
+          "</strong></div>",
+      )
+      .join("");
+  }
+  function renderEngagement() {
+    const lvl = E.level(api),
+      s = window.WT_V1_STATS.calculate(api),
+      wins = E.todayWins(api),
+      badges = E.allBadges(api),
+      collected = badges.filter((b) => b.count > 0).length,
+      groups = {};
+    badges.forEach((b) =>
+      (groups[b.category] || (groups[b.category] = [])).push(b),
+    );
+    $("levelText").textContent = "Level " + lvl.level + " · " + lvl.xp + " XP";
+    $("levelFill").style.width =
+      Math.round((lvl.progress / lvl.next) * 100) + "%";
+    $("progressSummary").textContent =
+      collected +
+      " / " +
+      badges.length +
+      " badges · " +
+      Math.round(s.lifetimeOz) +
+      " lifetime oz · " +
+      s.goalDays +
+      " goal days";
+    $("todayWins").innerHTML = wins
+      .slice(0, 10)
+      .map(
+        (w) =>
+          '<div class="winBadge ' +
+          (w.earned ? "earned" : "locked") +
+          '"><span class="winBadgeIcon">' +
+          w.icon +
+          '</span><span class="winBadgeName">' +
+          w.name +
+          '</span><span class="winBadgeState">' +
+          (w.earned ? "✓ Earned" : "Not yet") +
+          "</span></div>",
+      )
+      .join("");
+    $("badgeList").innerHTML =
+      '<div class="badgeSummary"><strong>' +
+      collected +
+      " / " +
+      badges.length +
+      " collected</strong><span>" +
+      lvl.xp +
+      " total XP</span></div>" +
+      Object.keys(groups)
+        .map(
+          (category) =>
+            '<section class="badgeCategory"><h3>' +
+            esc(category) +
+            "</h3>" +
+            groups[category]
+              .map(
+                (b) =>
+                  '<div class="badgeRow rarity-' +
+                  b.rarity +
+                  " " +
+                  (b.count ? "earned" : "locked") +
+                  '"><span class="badgeIcon">' +
+                  (b.count ? b.icon : "❔") +
+                  '</span><span class="badgeCopy"><strong>' +
+                  b.name +
+                  "</strong><small>" +
+                  b.rarity.toUpperCase() +
+                  " · " +
+                  b.xp +
+                  " XP · " +
+                  b.type +
+                  "</small><small>" +
+                  b.description +
+                  (b.firstEarnedAt
+                    ? " · First earned " +
+                      new Date(b.firstEarnedAt).toLocaleDateString()
+                    : "") +
+                  '</small></span><span class="badgeCount">×' +
+                  esc(b.count) +
+                  "</span></div>",
+              )
+              .join("") +
+            "</section>",
+        )
+        .join("");
+  }
+  function renderPlantMeta() {
+    const p = E.plant(api);
+    $("plantName").textContent = p.name;
+    window.dispatchEvent(
+      new CustomEvent("wt-plant-render", { detail: { reason: "data-change" } }),
+    );
+  }
+  function add(oz, label, key = D.dayKey()) {
+    try {
+      const r = api.addDrink(oz, label, key);
+      navigator.vibrate?.(20);
+      if (key === D.dayKey()) slosh();
+      toast("Added " + oz + " oz");
+      T.track("drink_logged", {
+        feature: "Logging",
+        amountOz: Number(oz),
+        mode: key === D.dayKey() ? "today" : "previous_day",
+      });
+      if (key !== D.dayKey()) openDay(key);
+      return r;
+    } catch (e) {
+      alert(e.message);
+    }
+  }
+  function openDay(key) {
+    if (key > D.dayKey()) {
+      toast("Future days cannot be edited.");
+      return;
+    }
+    selectedDay = key;
+    const d = D.dateFromKey(key);
+    $("dayTitle").textContent =
+      d.toLocaleDateString([], {
+        weekday: "long",
+        month: "short",
+        day: "numeric",
+      }) +
+      " · " +
+      api.totalFor(key) +
+      "/" +
+      api.goalFor(key) +
+      " oz";
+    const box = $("dayList"),
+      list = [...api.drinksFor(key)].reverse();
+    box.innerHTML = list.length
+      ? ""
+      : '<div class="drink">No drinks logged</div>';
+    list.forEach((x) => {
+      const r = document.createElement("div");
+      r.className = "drink";
+      r.innerHTML =
+        "<span>" +
+        D.formatTime(x.at) +
+        " · " +
+        esc(x.label) +
+        "</span><span><strong>+" +
+        x.oz +
+        ' oz</strong> <button class="ghost danger" data-id="' +
+        esc(x.id) +
+        '">Delete</button></span>';
+      box.appendChild(r);
+    });
+    box.querySelectorAll("[data-id]").forEach(
+      (b) =>
+        (b.onclick = () => {
+          if (confirm("Delete this drink?")) api.deleteDrink(key, b.dataset.id);
+          openDay(key);
+        }),
+    );
+    $("dayDialog").showModal();
+  }
+  function openCup(id = null) {
+    editingCup = id;
+    const c = state.cups.find((x) => x.id === id);
+    $("cupTitle").textContent = c ? "Edit Cup" : "Add Cup";
+    $("cupName").value = c?.name || "";
+    $("cupOz").value = c?.oz || "";
+    $("deleteCup").hidden = !c;
+    $("cupDialog").showModal();
+  }
+  function openSettings() {
+    $("goalMode").value = state.settings.goalMode;
+    $("dailyGoal").value = state.settings.dailyGoal;
+    $("weekdayGoal").value = state.settings.weekdayGoal;
+    $("weekendGoal").value = state.settings.weekendGoal;
+    $("birthday").value = state.settings.birthday || "";
+    $("theme").value = state.settings.theme;
+    $("versionText").textContent =
+      "Version " +
+      C.appVersion +
+      " · birthday " +
+      (state.settings.birthday ? "saved on this device" : "not set");
+    $("settingsDialog").showModal();
+  }
+  function importFile() {
+    const i = document.createElement("input");
+    i.type = "file";
+    i.accept = "application/json";
+    i.onchange = () => {
+      const f = i.files?.[0];
+      if (!f) return;
+      const r = new FileReader();
+      r.onload = () => {
+        try {
+          const next = S.importData(r.result);
+          api.replaceState(next);
+          toast("Data imported");
+        } catch (e) {
+          alert(e.message);
+        }
+      };
+      r.readAsText(f);
+    };
+    i.click();
+  }
+  $("saveAmountButton").onclick = () => {
+    const n = Number($("amountInput").value);
+    if (!n || n < 1) {
+      alert("Enter a valid ounce amount.");
+      return;
+    }
+    $("amountDialog").close();
+    add(n, "Custom amount");
+  };
+  $("undoButton").onclick = () => {
+    const x = api.undoToday();
+    toast(x ? "Undid " + x.oz + " oz" : "Nothing to undo");
+    T.track("undo_used", { feature: "Correction" });
+  };
+  $("resetButton").onclick = () => {
+    if (confirm("Reset today to 0 oz?")) api.resetDay();
+  };
+  $("restoreButton").onclick = () =>
+    toast(api.restoreDay() ? "Today restored" : "No backup for today");
+  $("addCupButton").onclick = () => openCup();
+  $("settingsButton").onclick = openSettings;
+  $("badgesButton").onclick = () =>
+    document.querySelector('[data-view="badgesView"]').click();
+  $("saveCup").onclick = () => {
+    try {
+      api.saveCup({
+        id: editingCup,
+        name: $("cupName").value,
+        oz: $("cupOz").value,
+      });
+      $("cupDialog").close();
+      toast("Cup saved");
+    } catch (e) {
+      alert(e.message);
+    }
+  };
+  $("deleteCup").onclick = () => {
+    if (editingCup && confirm("Delete this cup?")) {
+      api.deleteCup(editingCup);
+      $("cupDialog").close();
+    }
+  };
+  $("birthday").addEventListener("change", () => {
+    const birthday = $("birthday").value || "";
+    try {
+      api.saveSettings({ birthday });
+      toast(birthday ? "Birthday saved" : "Birthday removed");
+      T.track("profile_updated", { feature: "Settings" });
+      $("versionText").textContent =
+        "Version " +
+        C.appVersion +
+        " · birthday " +
+        (birthday ? "saved on this device" : "not set");
+    } catch (e) {
+      alert(e.message);
+    }
+  });
+  $("saveSettings").onclick = () => {
+    const birthday = $("birthday").value || "";
+    try {
+      api.saveSettings({
+        goalMode: $("goalMode").value,
+        dailyGoal: Number($("dailyGoal").value),
+        weekdayGoal: Number($("weekdayGoal").value),
+        weekendGoal: Number($("weekendGoal").value),
+        birthday,
+        theme: $("theme").value,
+      });
+      $("settingsDialog").close();
+      toast("Settings saved");
+      T.track("profile_updated", { feature: "Settings" });
+    } catch (e) {
+      alert(e.message);
+    }
+  };
+  $("exportButton").onclick = () => S.exportData(S.load());
+  $("importButton").onclick = importFile;
+  $("clearButton").onclick = () => {
+    if (
+      confirm(
+        "Reset Water Tracker? This permanently erases hydration history, plant progress, achievements, badge counts, cups, birthday, and settings.",
+      )
+    )
+      if (
+        confirm("This cannot be undone unless you exported a backup. Continue?")
+      ) {
+        S.resetUserData();
+        location.reload();
+      }
+  };
+  $("addPastDrink").onclick = () => {
+    const n = Number(prompt("Ounces to add:"));
+    if (n) add(n, "Manual edit", selectedDay);
+  };
+  $("resetPastDay").onclick = () => {
+    if (confirm("Reset this day?")) {
+      api.resetDay(selectedDay);
+      openDay(selectedDay);
+    }
+  };
+  $("developerButton").onclick = () => {
+    const p = E.plant(api),
+      pp = state.plantProgress || {},
+      info = [
+        ["Version", C.appVersion],
+        ["Schema", C.schemaVersion],
+        ["Install ID", T.installId().slice(0, 8)],
+        ["Birthday", state.settings.birthday || "Not set"],
+        ["Stored days", Object.keys(state.days).length],
+        ["Permanent badges", Object.keys(state.engagement.permanent).length],
+        [
+          "Daily wins",
+          Object.values(state.engagement.daily.counts).reduce(
+            (a, b) => a + b,
+            0,
+          ),
+        ],
+        ["Plant ID", p.plantId],
+        ["Plant stage", p.name],
+        ["Plant goal days", p.goalDays + " / " + p.durationGoalDays],
+        ["Plant baseline", pp.startedAtGoalDays || 0],
+        ["Completion pending", pp.completionPending ? "Yes" : "No"],
+        ["Completed plants", (pp.completedPlants || []).length],
+        ["Mystery seed", pp.nextSeed ? "Pending" : "None"],
+        ["Storage key", C.storageKey],
+      ];
+    $("devInfo").innerHTML = info
+      .map(
+        (x) =>
+          '<div class="badgeRow"><span>' +
+          x[0] +
+          "</span><strong>" +
+          esc(x[1]) +
+          "</strong></div>",
+      )
+      .join("");
+    $("devDialog").showModal();
+    T.track("developer_info_opened", { feature: "Developer" });
+  };
+  document.querySelectorAll("[data-view]").forEach(
+    (b) =>
+      (b.onclick = () => {
+        document
+          .querySelectorAll(".view")
+          .forEach((v) => v.classList.remove("active"));
+        $(b.dataset.view).classList.add("active");
+        window.scrollTo(0, 0);
+      }),
+  );
+  const media = matchMedia("(prefers-color-scheme: dark)");
+  media.addEventListener?.("change", applyTheme);
+  applyTheme();
+  lastTodayTotal = api.totalFor();
+  render();
+  T.track("app_opened", {
+    feature: "General",
+    mode: matchMedia("(display-mode: standalone)").matches
+      ? "Home Screen"
+      : "Browser",
+  });
 })();
