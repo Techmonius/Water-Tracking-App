@@ -1,3 +1,4 @@
+import { testUpdateFlow } from "./test-update-flow.mjs";
 import { testServiceWorker } from "./test-service-worker.mjs";
 import { crc32, inflateSync } from "node:zlib";
 import fs from "node:fs";
@@ -618,6 +619,7 @@ function rendererTests() {
 
 rendererTests();
 await testServiceWorker();
+await testUpdateFlow();
 imageIntegrity();
 syntaxCheck();
 staticReferences();

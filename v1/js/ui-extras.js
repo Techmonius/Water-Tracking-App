@@ -129,6 +129,41 @@
     d.addEventListener("toggle", () => (d.open ? lock() : unlock()));
     d.addEventListener("close", unlock);
   });
+  let checkingWorker = false;
+  async function refreshWorker() {
+    if (checkingWorker || document.visibilityState === "hidden") return;
+    checkingWorker = true;
+    try {
+      const reg = await navigator.serviceWorker?.getRegistration();
+      if (reg) {
+        if (reg.waiting) reg.waiting.postMessage({ type: "SKIP_WAITING" });
+        await reg.update();
+      }
+    } catch {
+      // Offline: retain the complete installed release.
+    } finally {
+      checkingWorker = false;
+    }
+  }
+  if (navigator.serviceWorker) {
+    let controlled = !!navigator.serviceWorker.controller;
+    let reloading = false;
+    navigator.serviceWorker.addEventListener("controllerchange", () => {
+      if (controlled && !reloading) {
+        reloading = true;
+        // Fallback if worker-side navigation does not refresh this window.
+        setTimeout(() => location.reload(), 1000);
+      }
+      controlled = true;
+    });
+  }
+  window.addEventListener("pageshow", refreshWorker);
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible") {
+      refreshWorker();
+      checkUpdate();
+    }
+  });
   async function checkUpdate() {
     const banner = $("updateBanner");
     if (!banner) return;
@@ -142,38 +177,6 @@
         banner.hidden = latest === C.appVersion;
     } catch {}
   }
-  function waitForWorker(reg, timeout = 60000) {
-    return new Promise((resolve, reject) => {
-      const watched = new Set();
-      const cleanup = () => {
-        clearTimeout(timer);
-        reg.removeEventListener("updatefound", check);
-        watched.forEach((w) => w.removeEventListener("statechange", check));
-      };
-      const check = () => {
-        if (reg.waiting) {
-          cleanup();
-          resolve(reg.waiting);
-          return;
-        }
-        const worker = reg.installing;
-        if (worker && !watched.has(worker)) {
-          watched.add(worker);
-          worker.addEventListener("statechange", check);
-        }
-      };
-      const timer = setTimeout(() => {
-        cleanup();
-        reject(
-          new Error(
-            "The update is not ready. Check your connection and try again.",
-          ),
-        );
-      }, timeout);
-      reg.addEventListener("updatefound", check);
-      check();
-    });
-  }
   $("updateNow").onclick = async () => {
     const b = $("updateNow");
     b.disabled = true;
@@ -184,8 +187,17 @@
         location.reload();
         return;
       }
+      const previousController = navigator.serviceWorker.controller;
       await reg.update();
-      const worker = await waitForWorker(reg);
+      if (navigator.serviceWorker.controller !== previousController) {
+        location.reload();
+        return;
+      }
+      const worker = reg.waiting || reg.installing;
+      if (!worker) {
+        location.reload();
+        return;
+      }
       await new Promise((resolve, reject) => {
         const changed = () => {
           clearTimeout(timer);
@@ -201,9 +213,10 @@
         navigator.serviceWorker.addEventListener("controllerchange", changed, {
           once: true,
         });
-        worker.postMessage({ type: "SKIP_WAITING" });
+        if (worker.state === "installed")
+          worker.postMessage({ type: "SKIP_WAITING" });
       });
-      // The activated worker navigates every app window to the new shell.
+      location.reload();
     } catch (error) {
       b.disabled = false;
       b.textContent = "Retry update";

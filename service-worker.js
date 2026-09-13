@@ -1,5 +1,5 @@
 const CACHE_PREFIX = "water-tracker-";
-const CACHE_NAME = "water-tracker-1.9.3";
+const CACHE_NAME = "water-tracker-1.9.4";
 const CORE_ASSETS = [
   "./",
   "./index.html",
@@ -51,7 +51,8 @@ self.addEventListener("install", (event) => {
       const cache = await caches.open(CACHE_NAME);
       // Do not activate unless the complete application shell is available.
       await cache.addAll(CORE_ASSETS);
-      // Existing clients keep their complete version until Update is selected.
+      // Activate only after the complete release downloads successfully.
+      await self.skipWaiting();
     })(),
   );
 });
@@ -66,7 +67,7 @@ self.addEventListener("activate", (event) => {
           .map((key) => caches.delete(key)),
       );
       await self.clients.claim();
-      // After explicit activation, move every open app window to the same shell.
+      // Refresh legacy clients as well as current app windows.
       const clients = await self.clients.matchAll({ type: "window" });
       await Promise.all(
         clients.map((client) => client.navigate(client.url).catch(() => null)),

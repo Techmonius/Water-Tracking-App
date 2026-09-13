@@ -75,10 +75,10 @@ export async function testServiceWorker() {
   assert.equal(removed.length, 0);
   rejectInstall = false;
   await lifecycle("install");
-  assert.equal(skipped, 0, "new release must wait for explicit activation");
+  assert.equal(skipped, 1, "complete release activates automatically");
   assert(core.includes("./v1/assets/plants/approved/sunflower.jpeg"));
   listeners.message({ data: { type: "SKIP_WAITING" } });
-  assert.equal(skipped, 1);
+  assert.equal(skipped, 2);
   await lifecycle("activate");
   assert.deepEqual(removed, ["water-tracker-1.9.1", "water-tracker-1.9.2"]);
   assert.equal(claimed, 1);
@@ -113,6 +113,6 @@ export async function testServiceWorker() {
   );
   assert.equal(network.length, before);
   console.log(
-    "✓ Service worker: failed install safety, explicit activation, scoped cleanup, offline shell/assets and uncached version checks",
+    "✓ Service worker: failed install safety, automatic activation, scoped cleanup, offline shell/assets and uncached version checks",
   );
 }
