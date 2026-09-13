@@ -9,6 +9,8 @@ export async function testServiceWorker() {
     navigated = [],
     network = [],
     entries = new Map();
+  let staleInstall = false;
+  const version = fs.readFileSync("v1-version.txt", "utf8").trim();
   let rejectInstall = false,
     offline = false,
     skipped = 0,
@@ -18,7 +20,11 @@ export async function testServiceWorker() {
   const cache = {
     async addAll(assets) {
       if (rejectInstall) throw new Error("Offline");
-      core = [...assets];
+      assert(assets.every((request) => request.cache === "reload"),
+        "new release must bypass stale HTTP cache entries");
+      core = assets.map((request) => "./" + new URL(request.url).pathname.slice(5));
+      entries.set("./v1-version.txt", new Response(version));
+      entries.set("./v1/js/config.js", new Response('appVersion: "' + (staleInstall ? "1.9.3" : version) + '"'));
       entries.set("./index.html", shell);
     },
     async match(key) {
@@ -30,10 +36,11 @@ export async function testServiceWorker() {
   };
   const context = {
     URL,
+    Request,
     Response,
     console,
     self: {
-      location: { origin: "https://example.test" },
+      location: { origin: "https://example.test", href: "https://example.test/app/service-worker.js" },
       addEventListener: (name, fn) => (listeners[name] = fn),
       skipWaiting: () => skipped++,
       clients: {
@@ -74,6 +81,10 @@ export async function testServiceWorker() {
   assert.equal(skipped, 0);
   assert.equal(removed.length, 0);
   rejectInstall = false;
+  staleInstall = true;
+  await assert.rejects(() => lifecycle("install"), /not consistent/);
+  assert.equal(skipped, 0, "stale 1.9.3 app files must not activate");
+  staleInstall = false;
   await lifecycle("install");
   assert.equal(skipped, 1, "complete release activates automatically");
   assert(core.includes("./v1/assets/plants/approved/sunflower.jpeg"));

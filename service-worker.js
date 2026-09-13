@@ -1,5 +1,6 @@
 const CACHE_PREFIX = "water-tracker-";
-const CACHE_NAME = "water-tracker-1.9.4";
+const APP_VERSION = "1.9.5";
+const CACHE_NAME = "water-tracker-1.9.5";
 const CORE_ASSETS = [
   "./",
   "./index.html",
@@ -50,7 +51,18 @@ self.addEventListener("install", (event) => {
     (async () => {
       const cache = await caches.open(CACHE_NAME);
       // Do not activate unless the complete application shell is available.
-      await cache.addAll(CORE_ASSETS);
+      // A new Cache Storage name does not bypass the browser HTTP cache.
+      // Revalidate each file so a new worker cannot install yesterday's app.
+      await cache.addAll(CORE_ASSETS.map((asset) =>
+        new Request(new URL(asset, self.location.href), { cache: "reload" })
+      ));
+      const version = await cache.match("./v1-version.txt");
+      const config = await cache.match("./v1/js/config.js");
+      if (!version || !config ||
+          (await version.text()).trim() !== APP_VERSION ||
+          !(await config.text()).includes('appVersion: "' + APP_VERSION + '"')) {
+        throw new Error("Release files are not consistent yet; keeping the installed app.");
+      }
       // Activate only after the complete release downloads successfully.
       await self.skipWaiting();
     })(),
