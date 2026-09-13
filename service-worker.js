@@ -1,5 +1,5 @@
 const CACHE_PREFIX = "water-tracker-";
-const CACHE_NAME = "water-tracker-1.9.2";
+const CACHE_NAME = "water-tracker-1.9.3";
 const CORE_ASSETS = [
   "./",
   "./index.html",

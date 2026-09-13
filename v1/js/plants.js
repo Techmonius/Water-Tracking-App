@@ -194,7 +194,7 @@
       attr(label) +
       '"><defs><clipPath id="' +
       id +
-      '" clipPathUnits="userSpaceOnUse"><path d="' +
+      '" clipPathUnits="userSpaceOnUse"><path shape-rendering="crispEdges" d="' +
       artwork.mask +
       '"/></clipPath></defs><image href="' +
       attr(asset) +

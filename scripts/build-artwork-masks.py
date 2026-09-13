@@ -1,28 +1,43 @@
 """Generate SVG clipping metadata. Approved JPEG bytes and colors stay unchanged.
 
-Pale page backgrounds are excluded, never dark pot/soil/leaf colors. The output
+Pale page backgrounds and their connected JPEG fringe are excluded. The output
 is vector mask metadata; artwork is still the original, unmodified raster.
 """
 from pathlib import Path
 from PIL import Image
 import json
+from collections import deque
 
 ROOT=Path(__file__).resolve().parents[1]
 
 def crop(source, roi, viewbox, head=None):
     image=Image.open(ROOT/source).convert('RGB')
     x0,y0,x1,y1=roi
+    # Flood only paper-colored pixels connected to the crop exterior. This
+    # includes the darker JPEG matte/shadow fringe, while retaining enclosed
+    # highlights. Never erode the whole silhouette: stems can be one pixel wide.
+    background=set()
+    queue=deque((x,y) for y in range(y0,y1) for x in range(x0,x1)
+                if x in (x0,x1-1) or y in (y0,y1-1))
+    seen=set()
+    while queue:
+        x,y=queue.popleft()
+        if (x,y) in seen or not (x0<=x<x1 and y0<=y<y1):continue
+        seen.add((x,y))
+        r,g,b=image.getpixel((x,y))
+        if min(r,g,b)>95 and max(r,g,b)-min(r,g,b)<85:
+            background.add((x,y))
+            queue.extend(((x-1,y),(x+1,y),(x,y-1),(x,y+1)))
     paths=[]
     for y in range(y0,y1):
         start=None
         for x in range(x0,x1+1):
-            selected=False
-            if x<x1:
+            selected=x<x1 and (x,y) not in background
+            if selected:
                 r,g,b=image.getpixel((x,y))
-                # Paper/cream backgrounds have three light channels. Green leaves,
-                # yellow petals, dark outlines and warm pots do not.
+                # Keep existing openings between leaves transparent too.
                 selected=not(min(r,g,b)>174 and max(r,g,b)-min(r,g,b)<72)
-                if head: selected=selected and head[0]<=x<head[2] and head[1]<=y<head[3]
+            if head:selected=selected and head[0]<=x<head[2] and head[1]<=y<head[3]
             if selected and start is None:start=x
             if not selected and start is not None:
                 paths.append(f'M{start} {y}h{x-start}v1h{start-x}z');start=None

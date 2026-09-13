@@ -29,3 +29,8 @@ runs=[tuple(map(int,m)) for m in re.findall(r'M(\d+) (\d+)h(\d+)v1h-\d+z',sprout
 for x,y in [(230,520),(238,520),(246,520),(237,473),(220,446),(253,446)]:
     assert any(ry==y and rx<=x<rx+width for rx,ry,width in runs), f'Sunflower sprout has a hole at {x},{y}'
 print('Sunflower sprout pot, stem and leaf interior points remain opaque.')
+
+# Background fringe beside the sprout pot must not return.
+for x,y in [(194,543),(280,543)]:
+    assert not any(ry==y and rx<=x<rx+width for rx,ry,width in runs), f'Sunflower matte remains at {x},{y}'
+print('Sunflower exterior matte points remain transparent.')
