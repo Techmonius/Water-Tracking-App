@@ -42,6 +42,7 @@
     if (event.key === C.storageKey || event.key === null) refreshFromStorage();
   });
   window.addEventListener("focus", refreshFromStorage);
+  window.addEventListener("wt-profile-saved", refreshFromStorage);
   document.addEventListener("visibilitychange", () => {
     if (!document.hidden) refreshFromStorage();
   });
@@ -140,7 +141,7 @@
       const b = document.createElement("button");
       b.className = "quick";
       b.textContent = "+" + oz;
-      b.onclick = () => add(oz, "Quick add");
+      b.onclick = () => add(oz, "Quick add", D.dayKey(), "quick_add");
       box.appendChild(b);
     });
     const custom = document.createElement("button");
@@ -160,7 +161,7 @@
       const b = document.createElement("button");
       b.className = "cup";
       b.innerHTML = "+" + esc(c.oz) + "<small>" + esc(c.name) + "</small>";
-      b.onclick = () => add(c.oz, c.name);
+      b.onclick = () => add(c.oz, c.name, D.dayKey(), "saved_cup");
       b.oncontextmenu = (e) => {
         e.preventDefault();
         openCup(c.id);
@@ -362,7 +363,7 @@
       new CustomEvent("wt-plant-render", { detail: { reason: "data-change" } }),
     );
   }
-  function add(oz, label, key = D.dayKey()) {
+  function add(oz, label, key = D.dayKey(), source = "unspecified") {
     try {
       const r = api.addDrink(oz, label, key);
       navigator.vibrate?.(20);
@@ -371,6 +372,9 @@
       T.track("drink_logged", {
         feature: "Logging",
         amountOz: Number(oz),
+        source,
+        date: key,
+        outcome: "saved",
         mode: key === D.dayKey() ? "today" : "previous_day",
       });
       if (key !== D.dayKey()) openDay(key);
@@ -420,10 +424,15 @@
     box.querySelectorAll("[data-id]").forEach(
       (b) =>
         (b.onclick = () => {
-          if (confirm("Delete this drink?")) api.deleteDrink(key, b.dataset.id);
+          if (confirm("Delete this drink?")) {
+            const drink = api.drinksFor(key).find(x => x.id === b.dataset.id);
+            api.deleteDrink(key, b.dataset.id);
+            T.track("drink_deleted", {feature: "Delete individual drink", summary: "Deleted " + (drink?.oz || 0) + " oz from " + key, date: key, amountOz: drink?.oz || 0, outcome: "deleted"});
+          }
           openDay(key);
         }),
     );
+    if (!$("dayDialog").open) T.track("day_viewed", {feature: "Calendar day details", summary: "Opened water log for " + key, date: key});
     $("dayDialog").showModal();
   }
   function openCup(id = null) {
@@ -448,6 +457,7 @@
       " · birthday " +
       (state.settings.birthday ? "saved on this device" : "not set");
     $("settingsDialog").showModal();
+    T.track("settings_opened", {feature: "Settings", summary: "Opened settings"});
   }
   function importFile() {
     const i = document.createElement("input");
@@ -462,6 +472,7 @@
           const next = S.importData(r.result);
           api.replaceState(next);
           toast("Data imported");
+          T.track("backup_imported", {feature: "Import backup", summary: "Imported a backup", outcome: "imported"});
         } catch (e) {
           alert(e.message);
         }
@@ -477,18 +488,26 @@
       return;
     }
     $("amountDialog").close();
-    add(n, "Custom amount");
+    add(n, "Custom amount", D.dayKey(), "custom");
   };
   $("undoButton").onclick = () => {
     const x = api.undoToday();
     toast(x ? "Undid " + x.oz + " oz" : "Nothing to undo");
-    T.track("undo_used", { feature: "Correction" });
+    T.track("undo_used", { feature: "Undo last drink", amountOz: x?.oz || 0,
+      summary: x ? "Removed " + x.oz + " oz using Undo" : "Undo requested with no drink to remove",
+      outcome: x ? "removed" : "nothing_to_undo", date: D.dayKey() });
   };
   $("resetButton").onclick = () => {
-    if (confirm("Reset today to 0 oz?")) api.resetDay();
+    if (confirm("Reset today to 0 oz?")) {
+      api.resetDay();
+      T.track("day_reset", {feature: "Reset today", summary: "Reset today's water log", date: D.dayKey(), outcome: "reset"});
+    }
   };
-  $("restoreButton").onclick = () =>
-    toast(api.restoreDay() ? "Today restored" : "No backup for today");
+  $("restoreButton").onclick = () => {
+    const restored = api.restoreDay();
+    toast(restored ? "Today restored" : "No backup for today");
+    T.track("day_restored", {feature: "Restore today", summary: restored ? "Restored today's water log" : "No saved day available to restore", outcome: restored ? "restored" : "no_backup", date: D.dayKey()});
+  };
   $("addCupButton").onclick = () => openCup();
   $("settingsButton").onclick = openSettings;
   $("badgesButton").onclick = () =>
@@ -502,6 +521,7 @@
       });
       $("cupDialog").close();
       toast("Cup saved");
+      T.track(editingCup ? "cup_updated" : "cup_created", {feature: editingCup ? "Edit saved cup" : "Create saved cup", summary: editingCup ? "Updated a saved cup" : "Created a saved cup", outcome: "saved"});
     } catch (e) {
       alert(e.message);
     }
@@ -509,6 +529,7 @@
   $("deleteCup").onclick = () => {
     if (editingCup && confirm("Delete this cup?")) {
       api.deleteCup(editingCup);
+      T.track("cup_deleted", {feature: "Delete saved cup", summary: "Deleted a saved cup", outcome: "deleted"});
       $("cupDialog").close();
     }
   };
@@ -516,8 +537,8 @@
     const birthday = $("birthday").value || "";
     try {
       api.saveSettings({ birthday });
-      toast(birthday ? "Birthday saved" : "Birthday removed");
-      T.track("profile_updated", { feature: "Settings" });
+      toast("Birthday saved");
+      T.track("birthday_saved", { feature: "Birthday settings", summary: "Updated birthday", outcome: "saved" });
       $("versionText").textContent =
         "Version " +
         C.appVersion +
@@ -530,6 +551,7 @@
   $("saveSettings").onclick = () => {
     const birthday = $("birthday").value || "";
     try {
+      const before = {...api.getState().settings};
       api.saveSettings({
         goalMode: $("goalMode").value,
         dailyGoal: Number($("dailyGoal").value),
@@ -540,12 +562,18 @@
       });
       $("settingsDialog").close();
       toast("Settings saved");
-      T.track("profile_updated", { feature: "Settings" });
+      const after = api.getState().settings;
+      const labels = {goalMode: "goal schedule", dailyGoal: "daily goal", weekdayGoal: "weekday goal", weekendGoal: "weekend goal", theme: "theme", birthday: "birthday"};
+      const changed = Object.keys(labels).filter(key => before[key] !== after[key]);
+      T.track("settings_saved", {feature: "Goals and appearance", summary: changed.length ? "Changed " + changed.map(key => labels[key]).join(", ") : "Saved settings without changes", outcome: changed.length ? "changed" : "unchanged"});
     } catch (e) {
       alert(e.message);
     }
   };
-  $("exportButton").onclick = () => S.exportData(S.load());
+  $("exportButton").onclick = () => {
+    S.exportData(S.load());
+    T.track("backup_exported", {feature: "Export backup", summary: "Requested backup download", outcome: "download_requested"});
+  };
   $("importButton").onclick = importFile;
   $("clearButton").onclick = () => {
     if (
@@ -556,17 +584,19 @@
       if (
         confirm("This cannot be undone unless you exported a backup. Continue?")
       ) {
+        T.track("app_data_cleared", {feature: "Clear all app data", summary: "Confirmed clearing local app data", outcome: "confirmed"});
         S.resetUserData();
         location.reload();
       }
   };
   $("addPastDrink").onclick = () => {
     const n = Number(prompt("Ounces to add:"));
-    if (n) add(n, "Manual edit", selectedDay);
+    if (n) add(n, "Manual edit", selectedDay, "previous_day");
   };
   $("resetPastDay").onclick = () => {
     if (confirm("Reset this day?")) {
       api.resetDay(selectedDay);
+      T.track("day_reset", {feature: "Reset selected day", summary: "Reset water log for " + selectedDay, date: selectedDay, outcome: "reset"});
       openDay(selectedDay);
     }
   };
@@ -616,6 +646,9 @@
           .querySelectorAll(".view")
           .forEach((v) => v.classList.remove("active"));
         $(b.dataset.view).classList.add("active");
+        const names = {homeView: "Home", statsView: "Statistics", badgesView: "Achievements"};
+        const name = names[b.dataset.view] || b.dataset.view;
+        T.track("screen_viewed", {feature: name, summary: "Opened " + name});
         window.scrollTo(0, 0);
       }),
   );

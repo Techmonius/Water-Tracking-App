@@ -19,7 +19,9 @@
       ? "iOS"
       : /Android/i.test(u)
         ? "Android"
-        : "Other";
+        : /Windows/i.test(u) ? "Windows"
+        : /Macintosh/i.test(u) ? (navigator.maxTouchPoints > 1 ? "iPadOS" : "macOS")
+        : /Linux/i.test(u) ? "Linux" : "Other";
   }
   function sessionId() {
     return sessionStorage.wtV1Session || (sessionStorage.wtV1Session = uid());
@@ -66,33 +68,53 @@
       return base;
     }
   }
+  function describe(event, data) {
+    const sourceNames = {quick_add: "Quick-add button", saved_cup: "Saved cup", custom: "Custom amount", previous_day: "Previous-day entry"};
+    let feature = data.feature || "Unspecified";
+    let summary = data.summary || event.replaceAll("_", " ");
+    if (event === "drink_logged") {
+      feature = sourceNames[data.source] || "Water logging";
+      summary = "Logged " + data.amountOz + " oz using " + feature.toLowerCase() + " for " + (data.date || "today");
+    } else if (event === "app_opened") {
+      const standalone = matchMedia("(display-mode: standalone)").matches;
+      feature = standalone ? "App launch — home screen" : "App launch — browser";
+      summary = standalone ? "Opened the installed app" : "Opened the app in a browser";
+    } else if (event === "goal_celebration") {
+      feature = "Daily goal celebration";
+      summary = "Reached today's water goal";
+    } else if (event === "developer_info_opened") {
+      feature = "Developer information"; summary = "Opened developer information";
+    }
+    return {feature, summary};
+  }
   function track(event, data = {}) {
-    const now = new Date(),
-      context = reportContext();
-    const payload = {
-      event,
-      label: event.replaceAll("_", " "),
-      summary: event.replaceAll("_", " "),
-      data: { ...data },
-      installId: installId(),
-      sessionId: sessionId(),
-      version: C.appVersion,
-      device: device(),
-      standalone: Boolean(matchMedia?.("(display-mode: standalone)").matches),
-      localDate: now.toLocaleDateString(),
-      localTime: now.toLocaleTimeString(),
-      timestamp: now.toISOString(),
-      ...context,
-    };
+    // Reporting must never interrupt a successfully saved water entry.
     try {
+      const now = new Date(), context = reportContext(), description = describe(event, data);
+      const safeData = {};
+      ["amountOz", "date", "source", "action", "outcome", "plantId"].forEach(key => {
+        if (typeof data[key] === "string" || typeof data[key] === "number") safeData[key] = data[key];
+      });
+      const payload = {
+        event, eventId: uid(), label: description.summary, summary: description.summary,
+        feature: description.feature,
+        data: {...safeData, feature: description.feature, featureDetail: description.feature, summary: description.summary},
+        installId: installId(), sessionId: sessionId(), version: C.appVersion,
+        device: device(), standalone: Boolean(matchMedia("(display-mode: standalone)").matches),
+        localDate: window.WT_V1_DATE.dayKey(), localTime: now.toLocaleTimeString(),
+        timestamp: now.toISOString(), ...context,
+      };
       fetch(ENDPOINT, {
-        method: "POST",
-        mode: "no-cors",
+        method: "POST", mode: "no-cors",
         headers: { "Content-Type": "text/plain;charset=utf-8" },
-        body: JSON.stringify(payload),
-        keepalive: true,
+        body: JSON.stringify(payload), keepalive: true,
       }).catch(() => {});
     } catch {}
   }
+  let wasHidden = document.hidden;
+  document.addEventListener("visibilitychange", () => {
+    if (wasHidden && !document.hidden) track("app_resumed", {feature: "App resume", summary: "Returned to the app"});
+    wasHidden = document.hidden;
+  });
   window.WT_V1_TELEMETRY = { track, installId, reportContext };
 })();

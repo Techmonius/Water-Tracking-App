@@ -38,6 +38,7 @@
   }
   $("toggleTimelineButton").onclick = () => {
     timelineOpen = !timelineOpen;
+    window.WT_V1_TELEMETRY.track("timeline_toggled", {feature: "Today drink history", summary: timelineOpen ? "Expanded today drink history" : "Collapsed today drink history", action: timelineOpen ? "expand" : "collapse"});
     $("timeline").classList.toggle("show", timelineOpen);
     $("toggleTimelineButton").textContent = timelineOpen ? "Hide" : "Show";
   };

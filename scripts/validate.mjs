@@ -1,3 +1,4 @@
+import { testReporting, testBirthdayGate } from "./test-reporting.mjs";
 import { testUpdateFlow } from "./test-update-flow.mjs";
 import { testServiceWorker } from "./test-service-worker.mjs";
 import { crc32, inflateSync } from "node:zlib";
@@ -620,6 +621,8 @@ function rendererTests() {
 rendererTests();
 await testServiceWorker();
 await testUpdateFlow();
+testReporting();
+testBirthdayGate();
 imageIntegrity();
 syntaxCheck();
 staticReferences();

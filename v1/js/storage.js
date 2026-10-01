@@ -113,7 +113,11 @@
       throw new Error("Choose a valid goal mode.");
     if (!["system", "light", "dark"].includes(next.theme))
       throw new Error("Choose a valid theme.");
-    if (next.birthday && validBirthday(next.birthday) !== String(next.birthday))
+    if (Object.prototype.hasOwnProperty.call(input || {}, "birthday") && !next.birthday)
+      throw new Error("Birthday is required.");
+    const today = new Date();
+    const todayKey = today.getFullYear() + "-" + String(today.getMonth()+1).padStart(2,"0") + "-" + String(today.getDate()).padStart(2,"0");
+    if (next.birthday && (validBirthday(next.birthday) !== String(next.birthday) || next.birthday > todayKey))
       throw new Error("Enter a valid birthday.");
     return normalizeSettings(next);
   }
@@ -346,6 +350,7 @@
     return save(migrateCurrent(p));
   }
   window.WT_V1_STORAGE = {
+    validBirthday,
     emptyState,
     normalize,
     normalizeSettings,

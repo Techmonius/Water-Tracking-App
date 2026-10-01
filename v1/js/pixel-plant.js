@@ -187,7 +187,10 @@
         seedButton.onclick = () => {
           seedButton.disabled = true;
           const nextPlant = plantMysterySeed();
-          if (nextPlant) render();
+          if (nextPlant) {
+            window.WT_V1_TELEMETRY.track("mystery_seed_planted", {feature: "Plant mystery seed", summary: "Started a new plant", plantId: nextPlant.id, outcome: "planted"});
+            render();
+          }
           else seedButton.disabled = false;
         };
     } finally {

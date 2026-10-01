@@ -208,10 +208,10 @@
             min="1"
             max="400" /></label
         ><label
-          >Birthday (optional)<input id="birthday" type="date" /><small
+          >Birthday (required)<input id="birthday" type="date" required /><small
             class="muted"
             >Used for the Birthday Hydration badge and included in usage reports
-            if you enter it.</small
+            to support birthday celebrations.</small
           ></label
         ><label
           >Theme<select id="theme">
@@ -224,10 +224,9 @@
           🔒 Drink-by-drink hydration history stays on this device. Water
           Tracker automatically sends a small usage report to help improve
           future versions; this build does not include an opt-out. Reports
-          include a random install ID, app/device status, optional birthday,
+          include a random install ID, app/device status, birthday,
           summary hydration/plant statistics, and small event details. A
-          drink-log event includes the ounces logged and whether it was for
-          today or a previous day; reports do not include your cup name or
+          drink-log event includes the ounces logged, entry method, and log date; reports do not include your cup name or
           upload your full drink history.<br /><br /><span
             id="versionText"
           ></span>
@@ -308,6 +307,16 @@
     </dialog>
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
     <div id="confetti" class="confetti" aria-hidden="true"></div>
+    <dialog id="birthdayGate" aria-labelledby="birthdayGateTitle">
+      <form id="birthdayGateForm">
+        <h2 id="birthdayGateTitle">Add your birthday to continue</h2>
+        <p>Birthday is required to use Water Tracker. It is saved on this device
+          and sent to the app owner's usage-report sheet for birthday celebrations.</p>
+        <label>Birthday<input id="requiredBirthday" type="date" required /></label>
+        <p id="birthdayGateError" role="alert"></p>
+        <button type="submit" class="primary">Save birthday and continue</button>
+      </form>
+    </dialog>
     <script src="v1/js/config.js"></script>
     <script src="v1/js/storage.js"></script>
     <script src="v1/js/date.js"></script>

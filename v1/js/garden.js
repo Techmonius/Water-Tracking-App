@@ -86,6 +86,7 @@
           def.durationGoalDays +
           " goal-day plant";
         dialog.showModal();
+        window.WT_V1_TELEMETRY.track("garden_plant_viewed", {feature: "Completed plant details", summary: "Viewed " + def.name, plantId: def.id});
       };
       grid.appendChild(card);
     });
@@ -93,6 +94,7 @@
   $("gardenButton").onclick = () => {
     render();
     showView("gardenView");
+    window.WT_V1_TELEMETRY.track("garden_opened", {feature: "Plant collection", summary: "Opened My Garden"});
   };
   $("gardenDone").onclick = () => showView("homeView");
   $("gardenDetailClose").onclick = () => dialog.close();
