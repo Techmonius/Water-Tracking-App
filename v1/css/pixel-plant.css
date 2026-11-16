@@ -109,6 +109,32 @@
     transform: scale(var(--flower-scale, 1.018));
   }
 }
+/* Only cropped blossom/fruit/leaf accents move; plant and pot stay still. */
+.flowerPulse.leafSway, .flowerPulseCrop.leafSway {
+  animation-name: plantLeafSway;
+  animation-duration: calc(var(--flower-period, 1s) * 2.5);
+}
+@keyframes plantLeafSway {
+  0%, 100% { transform: rotate(0deg); }
+  50% { transform: rotate(1.4deg); }
+}
+.plantFallingPetal {
+  position: absolute;
+  width: 5px;
+  height: 6px;
+  background: #f4a3c8;
+  border: 1px solid #cb628f;
+  border-radius: 65% 10% 60% 25%;
+  image-rendering: pixelated;
+  opacity: 0;
+  animation: petalDrift var(--petal-duration, 5s) steps(9, end) infinite;
+}
+@keyframes petalDrift {
+  0%, 8% { opacity: 0; transform: translate(0, 0) rotate(0deg); }
+  15% { opacity: 0.85; }
+  75% { opacity: 0.75; }
+  100% { opacity: 0; transform: translate(14px, 35px) rotate(85deg); }
+}
 .plantEffectLayer {
   position: absolute;
   inset: 0;
@@ -364,8 +390,10 @@
     opacity: 0.65;
   }
   .flowerPulse,
-  .flowerPulseCrop {
+  .flowerPulseCrop,
+  .plantFallingPetal {
     animation: none !important;
-    transform: scale(1) !important;
+    transform: none !important;
   }
+  .plantFallingPetal { opacity: 0; }
 }

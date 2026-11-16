@@ -158,9 +158,36 @@ function plantAssets() {
   const context = { window: {} };
   vm.createContext(context);
   vm.runInContext(read("v1/js/artwork.js"), context);
+  vm.runInContext(read("v1/js/artwork-extra.js"), context);
   vm.runInContext(read("v1/js/plants.js"), context, { filename: "plants.js" });
   const catalog = context.window.WT_V1_PLANTS?.CATALOG || {};
-  assert(Object.keys(catalog).length >= 3, "plant catalog loads");
+  assert(Object.keys(catalog).length === 8, "all eight plant species load");
+  const expectedSpecies = {"lavender":38,"strawberry":42,"cactus":36,"bonsai":45,"pothos":38};
+  for (const [id, goal] of Object.entries(expectedSpecies)) {
+    const plant = catalog[id];
+    assert(Boolean(plant), id + " is registered");
+    assert(plant?.durationGoalDays === goal, id + " has approved goal days");
+    assert(plant?.stages.length === 8, id + " has eight growth stages");
+    for (const stage of plant?.stages || []) {
+      const art = stage.artwork;
+      if (!art?.maskPacked) continue;
+      const raw = Buffer.from(art.maskPacked, "base64");
+      const [x0,y0,x1,y1] = art.bounds;
+      let offset = 0, valid = true, pixels = 0;
+      for (let y = y0; y < y1; y++) {
+        if (offset >= raw.length) {valid = false;break;}
+        const count = raw[offset++];
+        for (let j = 0; j < count; j++) {
+          if (offset + 1 >= raw.length) {valid = false;break;}
+          const x = raw[offset++], width = raw[offset++];
+          if (!width || x + width > x1 - x0) valid = false;
+          pixels += width;
+        }
+        if (!valid) break;
+      }
+      assert(valid && offset === raw.length && pixels > 100, id + " lossless mask validates");
+    }
+  }
   for (const plant of Object.values(catalog)) {
     let previous = -1;
     plant.stages.forEach((stage, index) => {
@@ -232,6 +259,7 @@ function makeDomainContext() {
     "v1/js/hydration.js",
     "v1/js/stats.js",
     "v1/js/artwork.js",
+    "v1/js/artwork-extra.js",
     "v1/js/plants.js",
   ])
     vm.runInContext(read(file), context, { filename: file });
