@@ -119,6 +119,31 @@
     ],
     [0, 4, 8, 13, 19, 26, 33, 40],
   );
+  const LAVENDER_STAGES = sourceStages(
+    "lavender",
+    ["Seed","Sprout","Young Plant","Leafy Growth","Bud Forms","Flower Opening","Full Bloom","Bloom Peak"],
+    [0,4,8,13,18,24,31,38],
+  );
+  const STRAWBERRY_STAGES = sourceStages(
+    "strawberry",
+    ["Seed","Sprout","Young Plant","Leafy Growth","Bud & Flower","Green Berries","Ripe Berries","Berry Abundance"],
+    [0,4,9,15,21,27,34,42],
+  );
+  const CACTUS_STAGES = sourceStages(
+    "cactus",
+    ["Seed","Sprout","Young Cactus","Growing Taller","Arm Branches","Bud Forms","Flower Opening","Cactus in Bloom"],
+    [0,4,8,12,18,24,30,36],
+  );
+  const BONSAI_STAGES = sourceStages(
+    "bonsai",
+    ["Seed","Sprout","Young Tree","Growing Branches","Bud Forms","Blossom Begins","Full Bloom","Blossom Peak"],
+    [0,5,10,16,23,30,37,45],
+  );
+  const POTHOS_STAGES = sourceStages(
+    "pothos",
+    ["Seed","Sprout","Young Vine","Growing Foliage","Fuller Vines","Lush Leaves","Trailing Beauty","Vine Abundance"],
+    [0,4,8,13,19,25,31,38],
+  );
   const starterCrop = (index, mask) => ({
     asset: STARTER_STAGES[index].asset,
     artwork: {
@@ -173,6 +198,35 @@
           "'": "&#39;",
         })[c],
     );
+  const packedMaskCache = new WeakMap();
+  // Raster data stays in the approved JPEG. Packed mask metadata is
+  // losslessly expanded to one-pixel-tall SVG clip rectangles on demand.
+  function artworkMask(artwork) {
+    if (!artwork.maskPacked) return artwork.mask;
+    if (packedMaskCache.has(artwork)) return packedMaskCache.get(artwork);
+    const [left, top, right, bottom] = artwork.bounds;
+    const region = artwork.region || artwork.bounds;
+    const bytes = atob(artwork.maskPacked);
+    const paths = [];
+    let offset = 0;
+    for (let y = top; y < bottom; y++) {
+      const count = bytes.charCodeAt(offset++);
+      for (let i = 0; i < count; i++) {
+        const x = left + bytes.charCodeAt(offset++);
+        const width = bytes.charCodeAt(offset++);
+        if (y < region[1] || y >= region[3]) continue;
+        const begin = Math.max(x, region[0]);
+        const end = Math.min(x + width, region[2]);
+        if (end > begin)
+          paths.push("M" + begin + " " + y + "h" + (end - begin) + "v1h" + (begin - end) + "z");
+      }
+    }
+    if (offset !== bytes.length)
+      throw new Error("Corrupt plant artwork mask");
+    const mask = paths.join("");
+    packedMaskCache.set(artwork, mask);
+    return mask;
+  }
   function artMarkup(asset, artwork, className = "", label = "") {
     if (!artwork)
       return (
@@ -195,7 +249,7 @@
       '"><defs><clipPath id="' +
       id +
       '" clipPathUnits="userSpaceOnUse"><path shape-rendering="crispEdges" d="' +
-      artwork.mask +
+      artworkMask(artwork) +
       '"/></clipPath></defs><image href="' +
       attr(asset) +
       '" width="' +
@@ -233,6 +287,41 @@
       durationGoalDays: 40,
       enabled: true,
       stages: Object.freeze(MONSTERA_STAGES.map(Object.freeze)),
+    }),
+    lavender: Object.freeze({
+      id: "lavender",
+      name: "Lavender",
+      durationGoalDays: 38,
+      enabled: true,
+      stages: Object.freeze(LAVENDER_STAGES.map(Object.freeze)),
+    }),
+    strawberry: Object.freeze({
+      id: "strawberry",
+      name: "Strawberry",
+      durationGoalDays: 42,
+      enabled: true,
+      stages: Object.freeze(STRAWBERRY_STAGES.map(Object.freeze)),
+    }),
+    cactus: Object.freeze({
+      id: "cactus",
+      name: "Cactus",
+      durationGoalDays: 36,
+      enabled: true,
+      stages: Object.freeze(CACTUS_STAGES.map(Object.freeze)),
+    }),
+    bonsai: Object.freeze({
+      id: "bonsai",
+      name: "Cherry Blossom Bonsai",
+      durationGoalDays: 45,
+      enabled: true,
+      stages: Object.freeze(BONSAI_STAGES.map(Object.freeze)),
+    }),
+    pothos: Object.freeze({
+      id: "pothos",
+      name: "Pothos (Devil's Ivy)",
+      durationGoalDays: 38,
+      enabled: true,
+      stages: Object.freeze(POTHOS_STAGES.map(Object.freeze)),
     }),
   });
   const DEFAULT_ID = "starter_flower";

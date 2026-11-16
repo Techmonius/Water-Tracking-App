@@ -1,6 +1,6 @@
 const CACHE_PREFIX = "water-tracker-";
-const APP_VERSION = "1.9.6";
-const CACHE_NAME = "water-tracker-1.9.6";
+const APP_VERSION = "1.9.7";
+const CACHE_NAME = "water-tracker-1.9.7";
 const CORE_ASSETS = [
   "./",
   "./index.html",
@@ -22,6 +22,7 @@ const CORE_ASSETS = [
   "./v1/js/hydration.js",
   "./v1/js/stats.js",
   "./v1/js/artwork.js",
+  "./v1/js/artwork-extra.js",
   "./v1/js/plants.js",
   "./v1/assets/plants/approved/sunflower.jpeg",
   "./v1/assets/plants/approved/plants-3-8.jpeg",

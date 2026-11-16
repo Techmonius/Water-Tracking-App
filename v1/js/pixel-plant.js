@@ -43,8 +43,28 @@
       html += '<i class="plantDrop plantDropLarge drop-' + (i + 1) + '"></i>';
     return html;
   }
+  function buildPetalDrift(layer, flowerAnimation, ratio) {
+    if (!layer || !flowerAnimation?.petalCount || !(Number(ratio) > 0)) return;
+    const positions = [[48,22],[67,30],[38,41],[73,47],[57,18],[32,34],[62,53],[43,57]];
+    const period = Math.max(3.8, 7 - 2.5 * Math.min(1, Number(ratio)));
+    for (let i = 0; i < flowerAnimation.petalCount; i++) {
+      const petal = document.createElement("i");
+      petal.className = "plantFallingPetal";
+      petal.setAttribute("aria-hidden", "true");
+      petal.style.left = positions[i][0] + "%";
+      petal.style.top = positions[i][1] + "%";
+      petal.style.setProperty("--petal-duration", period.toFixed(2) + "s");
+      petal.style.animationDelay = (-i * period / flowerAnimation.petalCount).toFixed(2) + "s";
+      layer.appendChild(petal);
+    }
+  }
   function buildFlowerPulses(scene, flowerAnimation, ratio) {
     const layer = scene.querySelector(".flowerPulseLayer");
+    if (flowerAnimation?.kind === "petal_drift") {
+      buildPetalDrift(layer, flowerAnimation, ratio);
+      return;
+    }
+    const isLeafSway = flowerAnimation?.kind === "leaf_sway";
     if (
       !layer ||
       !flowerAnimation ||
@@ -61,7 +81,7 @@
           ? (-period * (i / (Math.max(1, layers.length) * 2))).toFixed(3) + "s"
           : "0s";
       if (item.artwork) {
-        const art = P.artElement(item, "flowerPulse flowerAssetPulse", "");
+        const art = P.artElement(item, "flowerPulse flowerAssetPulse" + (isLeafSway ? " leafSway" : ""), "");
         art.setAttribute("aria-hidden", "true");
         art.style.transformOrigin = item.cx + "% " + item.cy + "%";
         art.style.setProperty("--flower-scale", String(item.scale || 1.06));
@@ -76,7 +96,7 @@
         const b = item.box,
           wrap = document.createElement("span"),
           img = document.createElement("img");
-        wrap.className = "flowerPulseCrop";
+        wrap.className = "flowerPulseCrop" + (isLeafSway ? " leafSway" : "");
         wrap.setAttribute("aria-hidden", "true");
         wrap.style.left = b.x + "%";
         wrap.style.top = b.y + "%";
@@ -100,7 +120,7 @@
         return;
       }
       const img = document.createElement("img");
-      img.className = "flowerPulse flowerAssetPulse";
+      img.className = "flowerPulse flowerAssetPulse" + (isLeafSway ? " leafSway" : "");
       img.src = item.asset;
       img.alt = "";
       img.setAttribute("aria-hidden", "true");
